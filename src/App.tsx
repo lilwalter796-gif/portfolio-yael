@@ -20,6 +20,8 @@ import {
   FaTiktok
 } from 'react-icons/fa6';
 
+import { supabase } from './lib/supabase';
+
 // DATA CONFIGURATION - MODIFY YOUR CONTENT HERE
 const PORTFOLIO_DATA = {
   name: "Yaël Noukimi",
@@ -42,92 +44,22 @@ const PORTFOLIO_DATA = {
   }
 };
 
-const PROJECTS = [
-  {
-    id: 1,
-    slug: "project-01",
-    title: "PROJECT 01",
-    category: "Event Coverage",
-    year: "2026",
-    location: "Italy",
-    thumbnail: "/assets/images/project-01.jpg",
-    video: "/assets/videos/project-01.mp4",
-    description: "A comprehensive look at the energy and atmosphere of one of the most anticipated events of the year. From tight crowd shots to wide architectural setups, this project encapsulates the dynamic environment.",
-    roles: ["Videography", "Editing", "Color Grading"],
-    gallery: [
-      "/assets/images/project-01.jpg",
-      "/assets/images/project-02.jpg"
-    ]
-  },
-  {
-    id: 2,
-    slug: "project-02",
-    title: "PROJECT 02",
-    category: "Brand Campaign",
-    year: "2026",
-    location: "Milan, Italy",
-    thumbnail: "/assets/images/project-02.jpg",
-    video: "/assets/videos/project-02.mp4",
-    description: "A visually striking campaign focusing on dynamic movement and raw energy, designed to elevate the brand's digital presence and engage a younger demographic.",
-    roles: ["Direction", "Cinematography", "Editing"],
-    gallery: [
-      "/assets/images/project-03.jpg",
-      "/assets/images/project-04.jpg"
-    ]
-  },
-  {
-    id: 3,
-    slug: "project-03",
-    title: "PROJECT 03",
-    category: "Fashion Editorial",
-    year: "2025",
-    location: "Paris, France",
-    thumbnail: "/assets/images/project-03.jpg",
-    video: "/assets/videos/project-03.mp4",
-    description: "High-contrast fashion film blending urban environments with avant-garde styling. An exploration of texture, light, and movement.",
-    roles: ["Creative Direction", "Photography"],
-    gallery: []
-  },
-  {
-    id: 4,
-    slug: "project-04",
-    title: "PROJECT 04",
-    category: "Music Video",
-    year: "2025",
-    location: "Rome, Italy",
-    thumbnail: "/assets/images/project-04.jpg",
-    video: "",
-    description: "Narrative-driven music video with a distinct color palette and moody lighting, crafted to match the emotional weight of the artist's track.",
-    roles: ["Cinematography", "Color Grading"],
-    gallery: []
-  },
-  {
-    id: 5,
-    slug: "project-05",
-    title: "PROJECT 05",
-    category: "Commercial",
-    year: "2025",
-    location: "Turin, Italy",
-    thumbnail: "/assets/images/project-05.jpg",
-    video: "/assets/videos/project-05.mp4",
-    description: "Product commercial emphasizing texture, light, and sleek design. Developed specifically for high-conversion social media campaigns.",
-    roles: ["Direction", "Post-Production"],
-    gallery: []
-  },
-  {
-    id: 6,
-    slug: "project-06",
-    title: "PROJECT 06",
-    category: "Short Doc",
-    year: "2024",
-    location: "Naples, Italy",
-    thumbnail: "/assets/images/project-06.jpg",
-    video: "",
-    description: "Intimate portrait of an artisan at work, focusing on detail and sound design to tell a compelling human story without voiceover.",
-    roles: ["Full Production"],
-    gallery: []
-  }
-];
+const FALLBACK_PROJECT_IMAGE =
+  'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?q=80&w=2071&auto=format&fit=crop';
+
+const normalizeProject = (project) => ({
+  id: project.id,
+  slug: project.slug,
+  title: project.title,
+  category: project.category ?? '',
+  year: project.year ? String(project.year) : '',
+  location: project.location ?? '',
+  thumbnail: project.thumbnail_url || FALLBACK_PROJECT_IMAGE,
+  video: project.video_url || '',
+  description: project.description ?? '',
+  roles: Array.isArray(project.roles) ? project.roles : [],
+  gallery: Array.isArray(project.gallery) ? project.gallery : [],
+});
 
 const SERVICES = [
   {
@@ -189,86 +121,293 @@ const SectionHeading = ({ children, className = "" }) => (
 );
 
 // --- NOUVEAU COMPOSANT : PAGE DÉTAIL DU PROJET ---
-const ProjectDetail = ({ project }) => {
+const ProjectDetail = ({ project, projects }) => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [project]);
 
-  if (!project) return null;
+  if (!project) {
+    return (
+      <div className="min-h-screen bg-black text-white pt-32 px-6 md:px-12">
+        <div className="max-w-7xl mx-auto">
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              window.location.hash = '';
+            }}
+            className="inline-flex items-center text-xs tracking-[0.15em] uppercase text-gray-400 hover:text-white transition-colors"
+          >
+            &larr; Back to Work
+          </a>
+          <p className="mt-16 text-gray-500">Project not found.</p>
+        </div>
+      </div>
+    );
+  }
 
-  const currentIndex = PROJECTS.findIndex(p => p.id === project.id);
-  const nextProject = PROJECTS[(currentIndex + 1) % PROJECTS.length];
+  const currentIndex = projects.findIndex((p) => p.id === project.id);
+  const nextProject =
+    projects.length > 1
+      ? projects[(currentIndex + 1) % projects.length]
+      : null;
 
   const handleImgError = (e) => {
-    e.target.src = 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?q=80&w=2071&auto=format&fit=crop';
+    e.currentTarget.src = FALLBACK_PROJECT_IMAGE;
   };
 
   return (
     <div className="min-h-screen bg-black text-white pt-24 md:pt-32 pb-20 animate-hero-fade">
       <div className="max-w-7xl mx-auto px-6 md:px-12 mb-12">
-        <a href="#" onClick={(e) => { e.preventDefault(); window.location.hash = ''; }} className="inline-flex items-center text-xs tracking-[0.15em] uppercase text-gray-400 hover:text-white transition-colors">
+        <a
+          href="#"
+          onClick={(e) => {
+            e.preventDefault();
+            window.location.hash = '';
+          }}
+          className="inline-flex items-center text-xs tracking-[0.15em] uppercase text-gray-400 hover:text-white transition-colors"
+        >
           &larr; Back to Work
         </a>
       </div>
 
       <header className="max-w-7xl mx-auto px-6 md:px-12 mb-12 md:mb-20">
-        <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold uppercase tracking-tighter mb-6">{project.title}</h1>
+        <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold uppercase tracking-tighter mb-6">
+          {project.title}
+        </h1>
         <p className="text-xs md:text-sm text-gray-400 tracking-[0.2em] uppercase">
-          {project.category} &middot; {project.year} &middot; {project.location}
+          {[project.category, project.year, project.location]
+            .filter(Boolean)
+            .join(' · ')}
         </p>
       </header>
 
       <div className="w-full aspect-video md:aspect-[21/9] bg-zinc-900 mb-20 overflow-hidden relative">
         {project.video ? (
-          <video src={project.video} autoPlay muted loop playsInline className="w-full h-full object-cover" />
+          <video
+            src={project.video}
+            controls
+            playsInline
+            poster={project.thumbnail}
+            className="w-full h-full object-cover"
+          />
         ) : (
-          <img src={project.thumbnail} alt={project.title} onError={handleImgError} className="w-full h-full object-cover" />
+          <img
+            src={project.thumbnail}
+            alt={project.title}
+            onError={handleImgError}
+            className="w-full h-full object-cover"
+          />
         )}
       </div>
 
       <div className="max-w-7xl mx-auto px-6 md:px-12 grid grid-cols-1 lg:grid-cols-12 gap-12 mb-32">
         <div className="lg:col-span-8">
-          <h2 className="text-xs tracking-[0.2em] uppercase text-gray-500 mb-6">Overview</h2>
-          <p className="text-lg md:text-xl font-light leading-relaxed text-gray-200">{project.description}</p>
+          <h2 className="text-xs tracking-[0.2em] uppercase text-gray-500 mb-6">
+            Overview
+          </h2>
+          <p className="text-lg md:text-xl font-light leading-relaxed text-gray-200">
+            {project.description || 'Project details coming soon.'}
+          </p>
         </div>
+
         <div className="lg:col-span-4 lg:col-start-9 border-t border-white/10 pt-8 lg:border-t-0 lg:pt-0 lg:border-l lg:pl-12">
-          <h2 className="text-xs tracking-[0.2em] uppercase text-gray-500 mb-6">My Role</h2>
-          <ul className="space-y-3">
-            {project.roles.map((role, i) => (
-              <li key={i} className="text-sm tracking-wide text-gray-300">{role}</li>
-            ))}
-          </ul>
+          <h2 className="text-xs tracking-[0.2em] uppercase text-gray-500 mb-6">
+            My Role
+          </h2>
+          {project.roles.length > 0 ? (
+            <ul className="space-y-3">
+              {project.roles.map((role, i) => (
+                <li key={i} className="text-sm tracking-wide text-gray-300">
+                  {role}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-gray-600">To be added.</p>
+          )}
         </div>
       </div>
 
-      {project.gallery && project.gallery.length > 0 && (
+      {project.gallery.length > 0 && (
         <div className="max-w-7xl mx-auto px-6 md:px-12 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 mb-32">
           {project.gallery.map((img, i) => (
-            <div key={i} className={`w-full bg-zinc-900 overflow-hidden ${i % 3 === 0 ? 'md:col-span-2 aspect-video' : 'aspect-square'}`}>
-              <img src={img} alt={`${project.title} Gallery ${i + 1}`} onError={handleImgError} className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" loading="lazy" />
+            <div
+              key={`${img}-${i}`}
+              className={`w-full bg-zinc-900 overflow-hidden ${
+                i % 3 === 0 ? 'md:col-span-2 aspect-video' : 'aspect-square'
+              }`}
+            >
+              <img
+                src={img}
+                alt={`${project.title} Gallery ${i + 1}`}
+                onError={handleImgError}
+                className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
+                loading="lazy"
+              />
             </div>
           ))}
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-6 md:px-12 border-t border-white/10 pt-20 text-center">
-        <p className="text-xs tracking-[0.2em] text-gray-500 uppercase mb-6">Next Project</p>
-        <a href={`#work/${nextProject.slug}`} className="inline-block group">
-          <h3 className="text-3xl md:text-5xl lg:text-6xl font-bold uppercase tracking-tighter mb-4 group-hover:text-gray-300 transition-colors">{nextProject.title}</h3>
-          <span className="text-xs tracking-[0.15em] uppercase flex justify-center items-center text-gray-400 group-hover:text-white transition-colors">
-            View Project <ArrowRight size={14} className="ml-2 transform group-hover:translate-x-2 transition-transform" />
-          </span>
-        </a>
-      </div>
+      {nextProject && (
+        <div className="max-w-7xl mx-auto px-6 md:px-12 border-t border-white/10 pt-20 text-center">
+          <p className="text-xs tracking-[0.2em] text-gray-500 uppercase mb-6">
+            Next Project
+          </p>
+          <a href={`#work/${nextProject.slug}`} className="inline-block group">
+            <h3 className="text-3xl md:text-5xl lg:text-6xl font-bold uppercase tracking-tighter mb-4 group-hover:text-gray-300 transition-colors">
+              {nextProject.title}
+            </h3>
+            <span className="text-xs tracking-[0.15em] uppercase flex justify-center items-center text-gray-400 group-hover:text-white transition-colors">
+              View Project
+              <ArrowRight
+                size={14}
+                className="ml-2 transform group-hover:translate-x-2 transition-transform"
+              />
+            </span>
+          </a>
+        </div>
+      )}
     </div>
   );
 };
+
+const ProjectCard = ({ project, index, isVisible }) => {
+  const videoRef = React.useRef(null);
+  const isEven = index % 2 === 0;
+
+  const handleMouseEnter = () => {
+    if (videoRef.current) {
+      videoRef.current.play().catch(() => {});
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }
+  };
+
+  const handleImgError = (e) => {
+    e.currentTarget.src = FALLBACK_PROJECT_IMAGE;
+  };
+
+  return (
+    <div
+      className={
+        isEven
+          ? 'md:col-span-7 md:col-start-1'
+          : 'md:col-span-5 md:col-start-8 md:mt-40'
+      }
+    >
+      <a
+        href={`#work/${project.slug}`}
+        className={`group block w-full transition-all duration-1000 transform ${
+          isVisible
+            ? 'translate-y-0 opacity-100'
+            : 'translate-y-20 opacity-0'
+        }`}
+        style={{ transitionDelay: `${(index % 2) * 150}ms` }}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        aria-label={`View project ${project.title}`}
+      >
+        <div className="relative w-full aspect-[4/5] overflow-hidden bg-zinc-900 mb-6">
+          <img
+            src={project.thumbnail}
+            alt={project.title}
+            onError={handleImgError}
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-90 group-hover:opacity-60"
+            loading="lazy"
+          />
+
+          {project.video && (
+            <video
+              ref={videoRef}
+              src={project.video}
+              muted
+              playsInline
+              loop
+              preload="none"
+              className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+            />
+          )}
+        </div>
+
+        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+          <div>
+            <h3 className="text-xl md:text-2xl font-medium tracking-wide mb-1 uppercase">
+              {project.title}
+            </h3>
+            <p className="text-xs text-gray-400 tracking-[0.15em] uppercase">
+              {[project.category, project.year]
+                .filter(Boolean)
+                .join(' · ')}
+            </p>
+          </div>
+
+          <div className="md:text-right flex flex-col md:items-end">
+            {project.roles.length > 0 && (
+              <p className="text-xs text-gray-500 tracking-[0.1em] uppercase mb-3">
+                {project.roles.join(' · ')}
+              </p>
+            )}
+            <span className="text-xs font-medium tracking-[0.15em] uppercase flex items-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform -translate-x-4 group-hover:translate-x-0">
+              View Project
+              <ArrowRight size={14} className="ml-2" />
+            </span>
+          </div>
+        </div>
+      </a>
+    </div>
+  );
+};
+
 // ----------------------------------------
 
 export default function Portfolio() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currentRoute, setCurrentRoute] = useState({ path: 'home', slug: null });
+  const [projects, setProjects] = useState([]);
+  const [projectsLoading, setProjectsLoading] = useState(true);
+  const [projectsError, setProjectsError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+
+    const loadPublishedProjects = async () => {
+      setProjectsLoading(true);
+      setProjectsError('');
+
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('published', true)
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: false });
+
+      if (!active) return;
+
+      if (error) {
+        console.error('Unable to load portfolio projects:', error);
+        setProjects([]);
+        setProjectsError(error.message);
+      } else {
+        setProjects((data ?? []).map(normalizeProject));
+      }
+
+      setProjectsLoading(false);
+    };
+
+    loadPublishedProjects();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Handle routing based on hash change (Single Page routing sans React Router)
   useEffect(() => {
@@ -456,102 +595,74 @@ export default function Portfolio() {
 
   const WorkSection = () => {
     const [ref, isVisible] = useScrollFade();
-    
-    const projectYears = PROJECTS.map(p => parseInt(p.year)).filter(y => !isNaN(y));
-    const minYear = Math.min(...projectYears);
-    const maxYear = Math.max(...projectYears);
-    
-    const handleImgError = (e) => {
-      e.target.src = 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?q=80&w=2071&auto=format&fit=crop';
-    };
+
+    const projectYears = projects
+      .map((p) => parseInt(p.year))
+      .filter((y) => !isNaN(y));
+
+    const minYear =
+      projectYears.length > 0 ? Math.min(...projectYears) : null;
+    const maxYear =
+      projectYears.length > 0 ? Math.max(...projectYears) : null;
 
     return (
-      <section id="work" className="py-32 px-6 md:px-12 bg-black text-white" ref={ref}>
+      <section
+        id="work"
+        className="py-32 px-6 md:px-12 bg-black text-white"
+        ref={ref}
+      >
         <div className="max-w-7xl mx-auto">
-          
-          {/* Header de la section */}
-          <div className={`flex flex-col md:flex-row md:items-end md:justify-between mb-20 gap-8 transition-all duration-1000 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+          <div
+            className={`flex flex-col md:flex-row md:items-end md:justify-between mb-20 gap-8 transition-all duration-1000 transform ${
+              isVisible
+                ? 'translate-y-0 opacity-100'
+                : 'translate-y-10 opacity-0'
+            }`}
+          >
             <div className="max-w-xl">
-              <SectionHeading className="!mb-4">Selected Work</SectionHeading>
+              <SectionHeading className="!mb-4">
+                Selected Work
+              </SectionHeading>
               <p className="text-gray-400 text-sm md:text-base font-light tracking-wide">
                 A selection of projects across film, photography, events and digital content.
               </p>
             </div>
+
             <div className="text-left md:text-right text-xs tracking-[0.2em] text-gray-500 uppercase flex flex-row md:flex-col gap-6 md:gap-1">
-              <p>{String(PROJECTS.length).padStart(2, '0')} PROJECTS</p>
-              <p>{minYear} &mdash; {maxYear}</p>
+              <p>{String(projects.length).padStart(2, '0')} PROJECTS</p>
+              {minYear !== null && maxYear !== null && (
+                <p>
+                  {minYear}
+                  {minYear !== maxYear ? ` — ${maxYear}` : ''}
+                </p>
+              )}
             </div>
           </div>
-          
-          {/* Grille de projets asymétrique */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-y-24 md:gap-y-32 md:gap-x-12 lg:gap-x-20">
-            {PROJECTS.map((project, index) => {
-              const isEven = index % 2 === 0;
-              const videoRef = React.useRef(null);
-              
-              const handleMouseEnter = () => {
-                if (videoRef.current) {
-                  videoRef.current.play().catch(() => {});
-                }
-              };
-              
-              const handleMouseLeave = () => {
-                if (videoRef.current) {
-                  videoRef.current.pause();
-                  videoRef.current.currentTime = 0;
-                }
-              };
 
-              return (
-                <div 
-                  key={project.id} 
-                  className={isEven ? "md:col-span-7 md:col-start-1" : "md:col-span-5 md:col-start-8 md:mt-40"}
-                >
-                  <a 
-                    href={`#work/${project.slug}`}
-                    className={`group block w-full transition-all duration-1000 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}
-                    style={{ transitionDelay: `${(index % 2) * 150}ms` }}
-                    onMouseEnter={handleMouseEnter}
-                    onMouseLeave={handleMouseLeave}
-                    aria-label={`View project ${project.title}`}
-                  >
-                    <div className="relative w-full aspect-[4/5] overflow-hidden bg-zinc-900 mb-6">
-                      <img 
-                        src={project.thumbnail} 
-                        alt={project.title}
-                        onError={handleImgError}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-90 group-hover:opacity-60"
-                        loading="lazy"
-                      />
-                      {project.video && (
-                        <video 
-                          ref={videoRef}
-                          src={project.video}
-                          muted 
-                          playsInline 
-                          loop 
-                          className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                        />
-                      )}
-                    </div>
-                    
-                    <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
-                      <div>
-                        <h3 className="text-xl md:text-2xl font-medium tracking-wide mb-1 uppercase">{project.title}</h3>
-                        <p className="text-xs text-gray-400 tracking-[0.15em] uppercase">{project.category} &middot; {project.year}</p>
-                      </div>
-                      <div className="md:text-right flex flex-col md:items-end">
-                        <p className="text-xs text-gray-500 tracking-[0.1em] uppercase mb-3">{project.roles.join(' · ')}</p>
-                        <span className="text-xs font-medium tracking-[0.15em] uppercase flex items-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform -translate-x-4 group-hover:translate-x-0">
-                          View Project <ArrowRight size={14} className="ml-2" />
-                        </span>
-                      </div>
-                    </div>
-                  </a>
-                </div>
-              );
-            })}
-          </div>
+          {projectsLoading ? (
+            <div className="min-h-56 flex items-center justify-center border-y border-white/5 text-gray-600 text-sm">
+              Loading projects...
+            </div>
+          ) : projectsError ? (
+            <div className="min-h-56 flex items-center justify-center border-y border-white/5 text-gray-600 text-sm text-center">
+              Projects are temporarily unavailable.
+            </div>
+          ) : projects.length === 0 ? (
+            <div className="min-h-56 flex items-center justify-center border-y border-white/5 text-gray-600 text-sm">
+              Selected work coming soon.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-y-24 md:gap-y-32 md:gap-x-12 lg:gap-x-20">
+              {projects.map((project, index) => (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  index={index}
+                  isVisible={isVisible}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </section>
     );
@@ -754,7 +865,10 @@ export default function Portfolio() {
         </main>
       ) : (
         <main>
-          <ProjectDetail project={PROJECTS.find(p => p.slug === currentRoute.slug)} />
+          <ProjectDetail
+            project={projects.find((p) => p.slug === currentRoute.slug)}
+            projects={projects}
+          />
         </main>
       )}
       <ContactSection />
