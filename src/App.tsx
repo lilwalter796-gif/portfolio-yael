@@ -21,6 +21,7 @@ import {
 } from 'react-icons/fa6';
 
 import { supabase } from './lib/supabase';
+import MuxPlayer from '@mux/mux-player-react';
 
 // DATA CONFIGURATION - MODIFY YOUR CONTENT HERE
 const PORTFOLIO_DATA = {
@@ -55,11 +56,100 @@ const normalizeProject = (project) => ({
   year: project.year ? String(project.year) : '',
   location: project.location ?? '',
   thumbnail: project.thumbnail_url || FALLBACK_PROJECT_IMAGE,
+  previewVideo: project.preview_video_url || '',
   video: project.video_url || '',
   description: project.description ?? '',
   roles: Array.isArray(project.roles) ? project.roles : [],
   gallery: Array.isArray(project.gallery) ? project.gallery : [],
 });
+
+const getYouTubeEmbedUrl = (url = '') => {
+  try {
+    const parsed = new URL(url);
+    let id = '';
+
+    if (parsed.hostname.includes('youtu.be')) {
+      id = parsed.pathname.replace('/', '');
+    } else if (parsed.hostname.includes('youtube.com')) {
+      if (parsed.pathname.startsWith('/embed/')) {
+        id = parsed.pathname.split('/embed/')[1]?.split('/')[0] || '';
+      } else if (parsed.pathname.startsWith('/shorts/')) {
+        id = parsed.pathname.split('/shorts/')[1]?.split('/')[0] || '';
+      } else {
+        id = parsed.searchParams.get('v') || '';
+      }
+    }
+
+    return id ? `https://www.youtube.com/embed/${id}` : '';
+  } catch {
+    return '';
+  }
+};
+
+const getVimeoEmbedUrl = (url = '') => {
+  try {
+    const parsed = new URL(url);
+    if (!parsed.hostname.includes('vimeo.com')) return '';
+
+    const id = parsed.pathname
+      .split('/')
+      .filter(Boolean)
+      .find((part) => /^\d+$/.test(part));
+
+    return id ? `https://player.vimeo.com/video/${id}` : '';
+  } catch {
+    return '';
+  }
+};
+
+const isDirectVideoUrl = (url = '') =>
+  /\.(mp4|webm|ogg)(\?.*)?$/i.test(url);
+
+const ProjectVideoPlayer = ({ url, poster, title }) => {
+  if (!url) return null;
+
+  if (url.startsWith('mux://')) {
+    const playbackId = url.replace('mux://', '').trim();
+
+    return (
+      <MuxPlayer
+        playbackId={playbackId}
+        streamType="on-demand"
+        poster={poster}
+        videoTitle={title}
+        accentColor="#ffffff"
+        className="w-full h-full"
+        style={{ width: '100%', height: '100%', aspectRatio: '16 / 9' }}
+      />
+    );
+  }
+
+  const youtubeEmbed = getYouTubeEmbedUrl(url);
+  const vimeoEmbed = getVimeoEmbedUrl(url);
+
+  if (youtubeEmbed || vimeoEmbed) {
+    return (
+      <iframe
+        src={youtubeEmbed || vimeoEmbed}
+        title={`${title} video`}
+        className="w-full h-full"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowFullScreen
+      />
+    );
+  }
+
+  return (
+    <video
+      src={url}
+      controls
+      playsInline
+      preload="metadata"
+      poster={poster}
+      className="w-full h-full object-cover"
+    />
+  );
+};
 
 const SERVICES = [
   {
@@ -184,12 +274,10 @@ const ProjectDetail = ({ project, projects }) => {
 
       <div className="w-full aspect-video md:aspect-[21/9] bg-zinc-900 mb-20 overflow-hidden relative">
         {project.video ? (
-          <video
-            src={project.video}
-            controls
-            playsInline
+          <ProjectVideoPlayer
+            url={project.video}
             poster={project.thumbnail}
-            className="w-full h-full object-cover"
+            title={project.title}
           />
         ) : (
           <img
@@ -275,16 +363,27 @@ const ProjectDetail = ({ project, projects }) => {
 
 const ProjectCard = ({ project, index, isVisible }) => {
   const videoRef = React.useRef(null);
+  const [isHovered, setIsHovered] = useState(false);
   const isEven = index % 2 === 0;
 
+  const muxPlaybackId =
+    typeof project.video === 'string' && project.video.startsWith('mux://')
+      ? project.video.replace('mux://', '').trim()
+      : '';
+
   const handleMouseEnter = () => {
-    if (videoRef.current) {
+    setIsHovered(true);
+
+    // Compatibilité avec un ancien preview_video_url si un projet en possède déjà un.
+    if (!muxPlaybackId && videoRef.current) {
       videoRef.current.play().catch(() => {});
     }
   };
 
   const handleMouseLeave = () => {
-    if (videoRef.current) {
+    setIsHovered(false);
+
+    if (!muxPlaybackId && videoRef.current) {
       videoRef.current.pause();
       videoRef.current.currentTime = 0;
     }
@@ -319,14 +418,40 @@ const ProjectCard = ({ project, index, isVisible }) => {
             src={project.thumbnail}
             alt={project.title}
             onError={handleImgError}
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-90 group-hover:opacity-60"
+            className={`w-full h-full object-cover transition-all duration-500 ${
+              isHovered && (muxPlaybackId || project.previewVideo)
+                ? 'scale-105 opacity-0'
+                : 'group-hover:scale-105 opacity-90 group-hover:opacity-60'
+            }`}
             loading="lazy"
           />
 
-          {project.video && (
+          {muxPlaybackId && isHovered && (
+            <MuxPlayer
+              playbackId={muxPlaybackId}
+              streamType="on-demand"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              poster={project.thumbnail}
+              videoTitle={`${project.title} preview`}
+              className="absolute inset-0 w-full h-full pointer-events-none"
+              style={{
+                width: '100%',
+                height: '100%',
+                '--controls': 'none',
+                '--media-object-fit': 'cover',
+                '--media-object-position': 'center',
+              }}
+            />
+          )}
+
+          {!muxPlaybackId && project.previewVideo && (
             <video
               ref={videoRef}
-              src={project.video}
+              src={project.previewVideo}
               muted
               playsInline
               loop

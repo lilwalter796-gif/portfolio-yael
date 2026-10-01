@@ -1,7 +1,8 @@
 // @ts-nocheck
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import MuxUploader from '@mux/mux-uploader-react'
 import {
   CheckCircle2,
   Edit3,
@@ -29,6 +30,7 @@ const EMPTY_PROJECT = {
   description: '',
   roles: [],
   thumbnail_url: '',
+  preview_video_url: '',
   video_url: '',
   gallery: [],
   published: false,
@@ -593,6 +595,9 @@ function ProjectEditor({
   const [error, setError] = useState('')
   const [coverUploading, setCoverUploading] = useState(false)
   const [galleryUploading, setGalleryUploading] = useState(false)
+  const muxUploadIdRef = useRef('')
+  const [muxVideoState, setMuxVideoState] = useState('')
+  const [muxVideoMessage, setMuxVideoMessage] = useState('')
 
   function update(field, value) {
     setForm((current) => ({
@@ -671,6 +676,106 @@ function ProjectEditor({
     setGalleryText(nextGallery.join('\n'))
   }
 
+  async function createMuxUploadUrl() {
+    setError('')
+    setMuxVideoState('creating')
+    setMuxVideoMessage("Préparation de l'upload sécurisé…")
+
+    const { data, error: functionError } = await supabase.functions.invoke('mux-video', {
+      body: {
+        action: 'create',
+        origin: window.location.origin,
+      },
+    })
+
+    if (functionError) {
+      setMuxVideoState('error')
+      setMuxVideoMessage('')
+      throw new Error(functionError.message || "Impossible de préparer l'upload Mux.")
+    }
+
+    if (!data?.url || !data?.uploadId) {
+      setMuxVideoState('error')
+      setMuxVideoMessage('')
+      throw new Error("Mux n'a pas renvoyé d'URL d'upload valide.")
+    }
+
+    muxUploadIdRef.current = data.uploadId
+    setMuxVideoState('uploading')
+    setMuxVideoMessage('Upload en cours vers Mux…')
+
+    return data.url
+  }
+
+  async function getMuxUploadStatus(uploadId) {
+    const { data, error: functionError } = await supabase.functions.invoke('mux-video', {
+      body: {
+        action: 'status',
+        uploadId,
+      },
+    })
+
+    if (functionError) {
+      throw new Error(functionError.message || "Impossible de vérifier l'état de la vidéo.")
+    }
+
+    return data
+  }
+
+  async function waitForMuxVideoReady(uploadId) {
+    if (!uploadId) {
+      throw new Error("Identifiant d'upload Mux introuvable.")
+    }
+
+    setMuxVideoState('processing')
+    setMuxVideoMessage('Upload terminé. Mux prépare maintenant la vidéo…')
+
+    // Environ 6 minutes maximum. Les vidéos courtes sont généralement prêtes bien avant.
+    for (let attempt = 0; attempt < 90; attempt += 1) {
+      const status = await getMuxUploadStatus(uploadId)
+
+      if (status?.status === 'ready' && status?.playbackId) {
+        update('video_url', `mux://${status.playbackId}`)
+        setMuxVideoState('ready')
+        setMuxVideoMessage('Vidéo prête. Clique sur Enregistrer pour l’associer au projet.')
+        return
+      }
+
+      if (
+        ['errored', 'cancelled', 'timed_out'].includes(status?.uploadStatus) ||
+        status?.assetStatus === 'errored'
+      ) {
+        throw new Error(status?.message || "Mux n'a pas pu traiter cette vidéo.")
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 4000))
+    }
+
+    throw new Error(
+      "La vidéo est bien envoyée, mais Mux met plus de temps que prévu à la préparer. Réessaie dans quelques minutes."
+    )
+  }
+
+  async function handleMuxUploadSuccess() {
+    try {
+      await waitForMuxVideoReady(muxUploadIdRef.current)
+    } catch (muxError) {
+      setMuxVideoState('error')
+      setMuxVideoMessage('')
+      setError(muxError.message || 'Erreur pendant le traitement Mux.')
+    }
+  }
+
+  function handleMuxUploadError(event) {
+    setMuxVideoState('error')
+    setMuxVideoMessage('')
+    const message =
+      event?.detail?.message ||
+      event?.detail ||
+      "L'upload vidéo a échoué."
+    setError(typeof message === 'string' ? message : "L'upload vidéo a échoué.")
+  }
+
   async function handleSave(e) {
     e.preventDefault()
     setSaving(true)
@@ -688,6 +793,7 @@ function ProjectEditor({
         .map((item) => item.trim())
         .filter(Boolean),
       thumbnail_url: cleanText(form.thumbnail_url) || null,
+      preview_video_url: cleanText(form.preview_video_url) || null,
       video_url: cleanText(form.video_url) || null,
       gallery: galleryText
         .split('\n')
@@ -903,21 +1009,82 @@ function ProjectEditor({
               </Field>
 
               <Field
-                label="Vidéo"
-                hint="Pour l'instant : URL Vimeo, YouTube ou fichier web"
+                label="Vidéos du projet"
+                hint="La même vidéo Mux sert sur la page projet et en preview au survol"
               >
-                <div className="space-y-3">
-                  <input
-                    value={form.video_url ?? ''}
-                    onChange={(e) => update('video_url', e.target.value)}
-                    className="admin-input"
-                    placeholder="https://..."
-                  />
+                <div className="space-y-6">
+                  <div className="border border-white/10 bg-zinc-950 p-4 md:p-5">
+                    <div className="flex items-start justify-between gap-4 mb-4">
+                      <div>
+                        <p className="text-sm font-medium">Vidéo principale via Mux</p>
+                        <p className="text-[11px] text-gray-600 mt-1">
+                          Sélectionne le fichier original. Cette même vidéo sera utilisée sur la page projet et en preview muette au survol.
+                        </p>
+                      </div>
 
-                  <p className="text-xs leading-relaxed text-gray-600">
-                    Nous garderons les grosses vidéos hors de Supabase Storage
-                    pour éviter de remplir rapidement ton quota.
-                  </p>
+                      {String(form.video_url ?? '').startsWith('mux://') && (
+                        <span className="text-[10px] uppercase tracking-[0.15em] text-emerald-400">
+                          Prête
+                        </span>
+                      )}
+                    </div>
+
+                    <MuxUploader
+                      endpoint={createMuxUploadUrl}
+                      pausable
+                      dynamicChunkSize
+                      onSuccess={handleMuxUploadSuccess}
+                      onUploadError={handleMuxUploadError}
+                    />
+
+                    {muxVideoMessage && (
+                      <div
+                        className={`mt-4 text-xs ${
+                          muxVideoState === 'ready'
+                            ? 'text-emerald-400'
+                            : 'text-gray-400'
+                        }`}
+                      >
+                        {muxVideoState === 'processing' && (
+                          <Loader2 size={14} className="inline mr-2 animate-spin" />
+                        )}
+                        {muxVideoMessage}
+                      </div>
+                    )}
+
+                    {String(form.video_url ?? '').startsWith('mux://') && (
+                      <div className="mt-4 border-t border-white/10 pt-4">
+                        <p className="text-[11px] text-gray-600 break-all">
+                          Playback ID : {String(form.video_url).replace('mux://', '')}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => update('video_url', '')}
+                          className="mt-3 text-xs text-red-400 hover:text-red-300 transition"
+                        >
+                          Retirer cette vidéo
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <details className="border border-white/10 p-4">
+                    <summary className="cursor-pointer text-xs text-gray-500">
+                      Utiliser une URL vidéo à la place
+                    </summary>
+
+                    <div className="mt-4">
+                      <input
+                        value={form.video_url ?? ''}
+                        onChange={(e) => update('video_url', e.target.value)}
+                        className="admin-input"
+                        placeholder="YouTube, Vimeo ou URL directe .mp4"
+                      />
+                      <p className="text-[11px] leading-relaxed text-gray-700 mt-2">
+                        Garde cette option pour une vidéo déjà hébergée ailleurs.
+                      </p>
+                    </div>
+                  </details>
                 </div>
               </Field>
             </div>
