@@ -749,184 +749,6 @@ function SiteContentManager({ session, onClose }) {
     loadContent()
   }, [])
 
-  useEffect(() => {
-    let active = true
-
-    async function loadProjectVideos() {
-      if (!project?.id) {
-        const legacyUrl = cleanText(project?.video_url)
-
-        if (legacyUrl) {
-          setProjectVideos([
-            {
-              _client_id: crypto.randomUUID(),
-              title: 'Main Film',
-              video_url: legacyUrl,
-              mux_asset_id: null,
-              video_type: 'Main Film',
-              orientation: 'horizontal',
-              is_featured: true,
-              sort_order: 0,
-            },
-          ])
-        }
-
-        setVideosLoading(false)
-        return
-      }
-
-      setVideosLoading(true)
-
-      const { data, error: videosError } = await supabase
-        .from('project_videos')
-        .select('*')
-        .eq('project_id', project.id)
-        .order('sort_order', { ascending: true })
-        .order('created_at', { ascending: true })
-
-      if (!active) return
-
-      if (videosError) {
-        setError(videosError.message)
-        setVideosLoading(false)
-        return
-      }
-
-      if ((data ?? []).length > 0) {
-        setProjectVideos(
-          data.map((video) => ({
-            ...video,
-            _client_id: video.id,
-          })),
-        )
-      } else if (cleanText(project.video_url)) {
-        // Filet de sécurité pendant la migration.
-        setProjectVideos([
-          {
-            _client_id: crypto.randomUUID(),
-            title: 'Main Film',
-            video_url: project.video_url,
-            mux_asset_id: null,
-            video_type: 'Main Film',
-            orientation: 'horizontal',
-            is_featured: true,
-            sort_order: 0,
-          },
-        ])
-      }
-
-      setVideosLoading(false)
-    }
-
-    loadProjectVideos()
-
-    return () => {
-      active = false
-    }
-  }, [project?.id])
-
-  function updateProjectVideo(clientId, field, value) {
-    setProjectVideos((current) =>
-      current.map((video) => {
-        if (field === 'is_featured') {
-          return {
-            ...video,
-            is_featured: video._client_id === clientId,
-          }
-        }
-
-        if (video._client_id !== clientId) return video
-
-        return {
-          ...video,
-          [field]: value,
-        }
-      }),
-    )
-  }
-
-  function removeProjectVideo(clientId) {
-    setProjectVideos((current) => {
-      const removed = current.find((video) => video._client_id === clientId)
-      const next = current.filter((video) => video._client_id !== clientId)
-
-      if (removed?.is_featured && next.length > 0) {
-        next[0] = {
-          ...next[0],
-          is_featured: true,
-        }
-      }
-
-      return next
-    })
-  }
-
-  function moveProjectVideo(clientId, direction) {
-    setProjectVideos((current) => {
-      const index = current.findIndex((video) => video._client_id === clientId)
-      if (index < 0) return current
-
-      const targetIndex = index + direction
-      if (targetIndex < 0 || targetIndex >= current.length) return current
-
-      const next = [...current]
-      const [item] = next.splice(index, 1)
-      next.splice(targetIndex, 0, item)
-      return next
-    })
-  }
-
-  function appendProjectVideo(videoUrl, muxAssetId = null) {
-    const cleanUrl = cleanText(videoUrl)
-    if (!cleanUrl) return
-
-    setProjectVideos((current) => {
-      const shouldBeFeatured =
-        current.length === 0 || Boolean(newVideoMeta.is_featured)
-
-      const nextVideo = {
-        _client_id: crypto.randomUUID(),
-        title:
-          cleanText(newVideoMeta.title) ||
-          `Film ${String(current.length + 1).padStart(2, '0')}`,
-        video_url: cleanUrl,
-        mux_asset_id: cleanText(muxAssetId) || null,
-        video_type: cleanText(newVideoMeta.video_type) || null,
-        orientation: newVideoMeta.orientation || 'horizontal',
-        is_featured: shouldBeFeatured,
-        sort_order: current.length,
-      }
-
-      const existing = shouldBeFeatured
-        ? current.map((video) => ({
-            ...video,
-            is_featured: false,
-          }))
-        : current
-
-      return [...existing, nextVideo]
-    })
-
-    setNewVideoMeta({
-      title: '',
-      video_type: '',
-      orientation: 'horizontal',
-      is_featured: false,
-      external_url: '',
-    })
-    setUploaderKey((value) => value + 1)
-  }
-
-  function addExternalVideo() {
-    if (!cleanText(newVideoMeta.external_url)) {
-      setError("Colle d'abord une URL vidéo.")
-      return
-    }
-
-    setError('')
-    appendProjectVideo(newVideoMeta.external_url)
-  }
-
   function update(field, value) {
     setForm((current) => ({
       ...current,
@@ -1724,6 +1546,187 @@ function ProjectEditor({
     external_url: '',
   })
 
+  useEffect(() => {
+    let active = true
+
+    async function loadProjectVideos() {
+      setVideosLoading(Boolean(project?.id))
+
+      if (!project?.id) {
+        const legacyUrl = cleanText(project?.video_url)
+
+        if (legacyUrl) {
+          setProjectVideos([
+            {
+              _client_id: crypto.randomUUID(),
+              title: 'Main Film',
+              video_url: legacyUrl,
+              mux_asset_id: null,
+              video_type: 'Main Film',
+              orientation: 'horizontal',
+              is_featured: true,
+              sort_order: 0,
+            },
+          ])
+        } else {
+          setProjectVideos([])
+        }
+
+        setVideosLoading(false)
+        return
+      }
+
+      const { data, error: videosError } = await supabase
+        .from('project_videos')
+        .select('*')
+        .eq('project_id', project.id)
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: true })
+
+      if (!active) return
+
+      if (videosError) {
+        setError(videosError.message)
+        setVideosLoading(false)
+        return
+      }
+
+      if ((data ?? []).length > 0) {
+        setProjectVideos(
+          data.map((video) => ({
+            ...video,
+            _client_id: video.id,
+          })),
+        )
+      } else if (cleanText(project.video_url)) {
+        setProjectVideos([
+          {
+            _client_id: crypto.randomUUID(),
+            title: 'Main Film',
+            video_url: project.video_url,
+            mux_asset_id: null,
+            video_type: 'Main Film',
+            orientation: 'horizontal',
+            is_featured: true,
+            sort_order: 0,
+          },
+        ])
+      } else {
+        setProjectVideos([])
+      }
+
+      setVideosLoading(false)
+    }
+
+    loadProjectVideos()
+
+    return () => {
+      active = false
+    }
+  }, [project?.id])
+
+  function updateProjectVideo(clientId, field, value) {
+    setProjectVideos((current) =>
+      current.map((video) => {
+        if (field === 'is_featured') {
+          return {
+            ...video,
+            is_featured: video._client_id === clientId,
+          }
+        }
+
+        if (video._client_id !== clientId) return video
+
+        return {
+          ...video,
+          [field]: value,
+        }
+      }),
+    )
+  }
+
+  function removeProjectVideo(clientId) {
+    setProjectVideos((current) => {
+      const removed = current.find((video) => video._client_id === clientId)
+      const next = current.filter((video) => video._client_id !== clientId)
+
+      if (removed?.is_featured && next.length > 0) {
+        next[0] = {
+          ...next[0],
+          is_featured: true,
+        }
+      }
+
+      return next
+    })
+  }
+
+  function moveProjectVideo(clientId, direction) {
+    setProjectVideos((current) => {
+      const index = current.findIndex((video) => video._client_id === clientId)
+      if (index < 0) return current
+
+      const targetIndex = index + direction
+      if (targetIndex < 0 || targetIndex >= current.length) return current
+
+      const next = [...current]
+      const [item] = next.splice(index, 1)
+      next.splice(targetIndex, 0, item)
+      return next
+    })
+  }
+
+  function appendProjectVideo(videoUrl, muxAssetId = null) {
+    const cleanUrl = cleanText(videoUrl)
+    if (!cleanUrl) return
+
+    setProjectVideos((current) => {
+      const shouldBeFeatured =
+        current.length === 0 || Boolean(newVideoMeta.is_featured)
+
+      const nextVideo = {
+        _client_id: crypto.randomUUID(),
+        title:
+          cleanText(newVideoMeta.title) ||
+          `Film ${String(current.length + 1).padStart(2, '0')}`,
+        video_url: cleanUrl,
+        mux_asset_id: cleanText(muxAssetId) || null,
+        video_type: cleanText(newVideoMeta.video_type) || null,
+        orientation: newVideoMeta.orientation || 'horizontal',
+        is_featured: shouldBeFeatured,
+        sort_order: current.length,
+      }
+
+      const existing = shouldBeFeatured
+        ? current.map((video) => ({
+            ...video,
+            is_featured: false,
+          }))
+        : current
+
+      return [...existing, nextVideo]
+    })
+
+    setNewVideoMeta({
+      title: '',
+      video_type: '',
+      orientation: 'horizontal',
+      is_featured: false,
+      external_url: '',
+    })
+    setUploaderKey((value) => value + 1)
+  }
+
+  function addExternalVideo() {
+    if (!cleanText(newVideoMeta.external_url)) {
+      setError("Colle d'abord une URL vidéo.")
+      return
+    }
+
+    setError('')
+    appendProjectVideo(newVideoMeta.external_url)
+  }
+
   function update(field, value) {
     setForm((current) => ({
       ...current,
@@ -1930,7 +1933,6 @@ function ProjectEditor({
       cleanedVideos[0].is_featured = true
     }
 
-    // Une seule vidéo principale.
     let featuredFound = false
     cleanedVideos.forEach((video) => {
       if (video.is_featured && !featuredFound) {
@@ -1958,7 +1960,6 @@ function ProjectEditor({
         .filter(Boolean),
       thumbnail_url: cleanText(form.thumbnail_url) || null,
       preview_video_url: null,
-      // On garde ce champ synchronisé pour compatibilité avec les anciens builds.
       video_url: featuredVideo?.video_url || null,
       gallery: galleryText
         .split('\n')
