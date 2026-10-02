@@ -17,7 +17,8 @@ import {
 import {
   FaInstagram,
   FaLinkedinIn,
-  FaTiktok
+  FaTiktok,
+  FaWhatsapp
 } from 'react-icons/fa6';
 
 import { supabase } from './lib/supabase';
@@ -362,8 +363,11 @@ const ProjectDetail = ({ project, projects }) => {
 };
 
 const ProjectCard = ({ project, index, isVisible }) => {
+  const cardRef = React.useRef(null);
   const videoRef = React.useRef(null);
   const [isHovered, setIsHovered] = useState(false);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const [isMobilePreviewActive, setIsMobilePreviewActive] = useState(false);
   const isEven = index % 2 === 0;
 
   const muxPlaybackId =
@@ -371,23 +375,58 @@ const ProjectCard = ({ project, index, isVisible }) => {
       ? project.video.replace('mux://', '').trim()
       : '';
 
-  const handleMouseEnter = () => {
-    setIsHovered(true);
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(hover: none)');
+    const updateDeviceMode = () => setIsTouchDevice(mediaQuery.matches);
 
-    // Compatibilité avec un ancien preview_video_url si un projet en possède déjà un.
-    if (!muxPlaybackId && videoRef.current) {
-      videoRef.current.play().catch(() => {});
+    updateDeviceMode();
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', updateDeviceMode);
+      return () => mediaQuery.removeEventListener('change', updateDeviceMode);
     }
-  };
 
-  const handleMouseLeave = () => {
-    setIsHovered(false);
+    mediaQuery.addListener(updateDeviceMode);
+    return () => mediaQuery.removeListener(updateDeviceMode);
+  }, []);
 
-    if (!muxPlaybackId && videoRef.current) {
+  useEffect(() => {
+    if (!isTouchDevice || !cardRef.current) {
+      setIsMobilePreviewActive(false);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsMobilePreviewActive(
+          entry.isIntersecting && entry.intersectionRatio >= 0.55
+        );
+      },
+      {
+        threshold: [0, 0.35, 0.55, 0.75, 1],
+        rootMargin: '-8% 0px -8% 0px',
+      }
+    );
+
+    observer.observe(cardRef.current);
+
+    return () => observer.disconnect();
+  }, [isTouchDevice]);
+
+  const previewActive = isTouchDevice
+    ? isMobilePreviewActive
+    : isHovered;
+
+  useEffect(() => {
+    if (!videoRef.current || muxPlaybackId) return;
+
+    if (previewActive) {
+      videoRef.current.play().catch(() => {});
+    } else {
       videoRef.current.pause();
       videoRef.current.currentTime = 0;
     }
-  };
+  }, [previewActive, muxPlaybackId]);
 
   const handleImgError = (e) => {
     e.currentTarget.src = FALLBACK_PROJECT_IMAGE;
@@ -395,6 +434,7 @@ const ProjectCard = ({ project, index, isVisible }) => {
 
   return (
     <div
+      ref={cardRef}
       className={
         isEven
           ? 'md:col-span-7 md:col-start-1'
@@ -409,8 +449,8 @@ const ProjectCard = ({ project, index, isVisible }) => {
             : 'translate-y-20 opacity-0'
         }`}
         style={{ transitionDelay: `${(index % 2) * 150}ms` }}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         aria-label={`View project ${project.title}`}
       >
         <div className="relative w-full aspect-[4/5] overflow-hidden bg-zinc-900 mb-6">
@@ -419,18 +459,18 @@ const ProjectCard = ({ project, index, isVisible }) => {
             alt={project.title}
             onError={handleImgError}
             className={`w-full h-full object-cover transition-all duration-500 ${
-              isHovered && (muxPlaybackId || project.previewVideo)
+              previewActive && (muxPlaybackId || project.previewVideo)
                 ? 'scale-105 opacity-0'
                 : 'group-hover:scale-105 opacity-90 group-hover:opacity-60'
             }`}
             loading="lazy"
           />
 
-          {muxPlaybackId && isHovered && (
+          {muxPlaybackId && previewActive && (
             <MuxPlayer
               playbackId={muxPlaybackId}
               streamType="on-demand"
-              autoPlay
+              autoPlay="muted"
               muted
               loop
               playsInline
@@ -455,9 +495,17 @@ const ProjectCard = ({ project, index, isVisible }) => {
               muted
               playsInline
               loop
-              preload="none"
-              className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+              preload="metadata"
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 pointer-events-none ${
+                previewActive ? 'opacity-100' : 'opacity-0'
+              }`}
             />
+          )}
+
+          {isTouchDevice && (muxPlaybackId || project.previewVideo) && (
+            <div className="absolute bottom-3 left-3 z-10 px-3 py-1.5 bg-black/55 backdrop-blur-sm border border-white/10 text-[9px] uppercase tracking-[0.18em] text-white/80 pointer-events-none">
+              Preview
+            </div>
           )}
         </div>
 
@@ -479,7 +527,7 @@ const ProjectCard = ({ project, index, isVisible }) => {
                 {project.roles.join(' · ')}
               </p>
             )}
-            <span className="text-xs font-medium tracking-[0.15em] uppercase flex items-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform -translate-x-4 group-hover:translate-x-0">
+            <span className="text-xs font-medium tracking-[0.15em] uppercase flex items-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 md:transform md:-translate-x-4 md:group-hover:translate-x-0">
               View Project
               <ArrowRight size={14} className="ml-2" />
             </span>
@@ -489,7 +537,6 @@ const ProjectCard = ({ project, index, isVisible }) => {
     </div>
   );
 };
-
 // ----------------------------------------
 
 export default function Portfolio() {
@@ -517,6 +564,7 @@ export default function Portfolio() {
     contact_heading: "LET'S CREATE\nSOMETHING\nMEMORABLE.",
     contact_description: 'Available for freelance projects, collaborations and professional opportunities.',
     contact_email: PORTFOLIO_DATA.email,
+    whatsapp_number: '',
     instagram_url: PORTFOLIO_DATA.socials.instagram,
     tiktok_url: PORTFOLIO_DATA.socials.tiktok,
     linkedin_url: PORTFOLIO_DATA.socials.linkedin,
@@ -575,6 +623,7 @@ export default function Portfolio() {
           contact_heading,
           contact_description,
           contact_email,
+          whatsapp_number,
           instagram_url,
           tiktok_url,
           linkedin_url
@@ -603,6 +652,7 @@ export default function Portfolio() {
         contact_heading: data?.contact_heading || current.contact_heading,
         contact_description: data?.contact_description || current.contact_description,
         contact_email: data?.contact_email || current.contact_email,
+        whatsapp_number: data?.whatsapp_number ?? '',
         instagram_url: data?.instagram_url || current.instagram_url,
         tiktok_url: data?.tiktok_url || current.tiktok_url,
         linkedin_url: data?.linkedin_url || current.linkedin_url,
@@ -641,6 +691,13 @@ export default function Portfolio() {
     .map((paragraph) => paragraph.trim())
     .filter(Boolean);
 
+  const whatsappDigits = String(siteSettings.whatsapp_number || '')
+    .replace(/\D/g, '');
+
+  const whatsappHref = whatsappDigits
+    ? `https://wa.me/${whatsappDigits}`
+    : '';
+
   // Handle routing based on hash change (Single Page routing sans React Router)
   useEffect(() => {
     const handleHashChange = () => {
@@ -658,6 +715,18 @@ export default function Portfolio() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
+  // Prevent the page behind the mobile menu from scrolling.
+  useEffect(() => {
+    if (!mobileMenuOpen) return
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [mobileMenuOpen])
+
   // Handle scroll for navbar transparency
   useEffect(() => {
     const handleScroll = () => {
@@ -669,22 +738,35 @@ export default function Portfolio() {
 
   const scrollTo = (id) => {
     setMobileMenuOpen(false);
-    if (currentRoute.path !== 'home') {
-      window.location.hash = ''; // Return home first
-      setTimeout(() => {
-        const element = document.getElementById(id);
-        if (element) element.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
-    } else {
+
+    const goToSection = () => {
       const element = document.getElementById(id);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
-      }
+      if (!element) return;
+
+      const navbar = document.getElementById('site-navbar');
+      const navbarHeight = navbar?.getBoundingClientRect().height ?? 72;
+      const targetTop =
+        element.getBoundingClientRect().top +
+        window.scrollY -
+        navbarHeight -
+        8;
+
+      window.scrollTo({
+        top: Math.max(0, targetTop),
+        behavior: 'smooth',
+      });
+    };
+
+    if (currentRoute.path !== 'home') {
+      window.location.hash = '';
+      setTimeout(goToSection, 180);
+    } else {
+      requestAnimationFrame(goToSection);
     }
   };
 
   const Navbar = () => (
-    <nav className={`fixed w-full z-50 transition-all duration-500 ${
+    <nav id="site-navbar" className={`fixed w-full z-50 transition-all duration-500 ${
       isScrolled ? 'bg-black/90 backdrop-blur-md py-4 border-b border-white/5' : 'bg-transparent py-8'
     }`}>
       <div className="max-w-7xl mx-auto px-6 md:px-12 flex justify-between items-center">
@@ -729,26 +811,40 @@ export default function Portfolio() {
         </button>
       </div>
 
-      {/* Mobile Nav Menu */}
-      <div className={`fixed inset-0 bg-black z-40 transition-transform duration-500 ease-in-out md:hidden ${
-        mobileMenuOpen ? 'translate-y-0' : '-translate-y-full'
-      } flex flex-col items-center justify-center space-y-8`}>
-        {['work', 'about', 'services', 'contact'].map((item) => (
-          <button 
-            key={item}
-            onClick={() => scrollTo(item)}
-            className="text-2xl tracking-[0.1em] uppercase text-white hover:text-gray-400 transition-colors"
-          >
-            {item}
-          </button>
-        ))}
-      </div>
+      {/* Mobile Nav Menu
+          On iOS/Safari we render it only when open instead of translating
+          a full-screen fixed layer outside the viewport. This avoids menu
+          items leaking back into view when the browser bars resize. */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black z-40 md:hidden flex flex-col items-center justify-center px-6"
+          style={{
+            paddingTop: 'max(5rem, env(safe-area-inset-top))',
+            paddingBottom: 'max(2rem, env(safe-area-inset-bottom))',
+          }}
+        >
+          <div className="flex flex-col items-center gap-8">
+            {['work', 'about', 'services', 'contact'].map((item) => (
+              <button
+                key={item}
+                onClick={() => scrollTo(item)}
+                className="text-2xl tracking-[0.1em] uppercase text-white hover:text-gray-400 transition-colors"
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </nav>
   );
 
   const HeroSection = () => {
     return (
-      <section className="relative h-screen w-full flex items-end pb-24 md:pb-32 px-6 md:px-12 overflow-hidden bg-black">
+      <section
+        className="relative min-h-[100svh] md:min-h-screen w-full flex items-end pb-24 md:pb-32 px-6 md:px-12 overflow-hidden bg-black"
+        style={{ touchAction: 'pan-y' }}
+      >
         {/* CSS Animations for Hero */}
         <style>{`
           @keyframes fadeUp {
@@ -768,7 +864,7 @@ export default function Portfolio() {
         `}</style>
 
         {/* Background Video */}
-        <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden="true">
           {showreelMuxPlaybackId ? (
             <MuxPlayer
               playbackId={showreelMuxPlaybackId}
@@ -795,7 +891,7 @@ export default function Portfolio() {
               muted 
               playsInline 
               poster="https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=2025&auto=format&fit=crop"
-              className="w-full h-full object-cover opacity-80"
+              className="w-full h-full object-cover opacity-80 pointer-events-none"
             >
               <source src="/assets/videos/hero-showreel.mp4" type="video/mp4" />
             </video>
@@ -806,7 +902,7 @@ export default function Portfolio() {
         </div>
 
         {/* Main Content - Bottom Left Aligned */}
-        <div className="relative z-10 w-full max-w-7xl mx-auto flex flex-col items-start text-left">
+        <div className="relative z-10 w-full max-w-7xl mx-auto flex flex-col items-start text-left pointer-events-auto">
           <h1 className="text-[clamp(3rem,8vw,8rem)] font-bold text-white mb-6 tracking-tighter leading-[0.9] uppercase animate-hero-fade">
             {renderMultilineTitle(siteSettings.hero_title)}
           </h1>
@@ -820,24 +916,32 @@ export default function Portfolio() {
             </p>
           </div>
           
-          <div className="mt-12 flex flex-col sm:flex-row items-start sm:items-center gap-8 animate-hero-fade delay-300 w-full sm:w-auto">
-            <button 
+          <div className="mt-10 md:mt-12 grid grid-cols-[1.05fr_0.95fr] sm:flex sm:flex-row items-stretch gap-2.5 sm:gap-4 animate-hero-fade delay-300 w-full sm:w-auto max-w-xl">
+            <button
+              type="button"
               onClick={() => scrollTo('contact')}
-              className="w-full sm:w-auto px-10 py-4 bg-white text-black hover:bg-gray-200 transition-all duration-300 tracking-[0.15em] text-xs uppercase font-medium flex items-center justify-center gap-3"
+              className="touch-manipulation select-none min-w-0 sm:min-w-[220px] px-3 sm:px-8 py-4 bg-white text-black hover:bg-gray-200 active:scale-[0.98] transition-all duration-200 tracking-[0.08em] sm:tracking-[0.15em] text-[9px] min-[390px]:text-[10px] sm:text-xs uppercase font-medium flex items-center justify-center gap-1.5 sm:gap-3 text-center leading-tight"
             >
-              {siteSettings.hero_primary_cta} <ArrowRight size={14} />
+              <span className="min-w-0 break-words">
+                {siteSettings.hero_primary_cta}
+              </span>
+              <ArrowRight size={13} className="shrink-0" />
             </button>
-            <button 
+
+            <button
+              type="button"
               onClick={() => scrollTo('work')}
-              className="text-xs tracking-[0.15em] uppercase text-white border-b border-white/30 pb-1 hover:border-white transition-all duration-300"
+              className="touch-manipulation select-none min-w-0 sm:min-w-[190px] px-3 sm:px-8 py-4 border border-white/35 bg-black/20 backdrop-blur-sm text-white hover:bg-white hover:text-black hover:border-white active:scale-[0.98] transition-all duration-200 tracking-[0.08em] sm:tracking-[0.15em] text-[9px] min-[390px]:text-[10px] sm:text-xs uppercase font-medium flex items-center justify-center text-center leading-tight"
             >
-              {siteSettings.hero_secondary_cta}
+              <span className="min-w-0 break-words">
+                {siteSettings.hero_secondary_cta}
+              </span>
             </button>
           </div>
         </div>
 
         {/* Discreet Scroll Indicator */}
-        <div className="absolute bottom-8 left-6 md:left-12 animate-hero-fade delay-500">
+        <div className="absolute bottom-8 left-6 md:left-12 animate-hero-fade delay-500 pointer-events-none">
           <span className="text-[10px] tracking-[0.2em] text-white/50 uppercase flex items-center gap-2">
             Scroll to explore &darr;
           </span>
@@ -1086,51 +1190,130 @@ export default function Portfolio() {
 
   const ContactSection = () => {
     return (
-      <section id="contact" className="bg-black text-white border-t border-white/10 flex flex-col min-h-screen justify-between">
-        <div className="flex-grow flex items-center justify-center py-32 px-4 text-center">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter leading-[0.9] mb-12 uppercase">
-              {renderMultilineTitle(siteSettings.contact_heading)}
-            </h2>
-            <p className="text-gray-400 text-lg md:text-xl font-light mb-12 max-w-xl mx-auto">
-              {siteSettings.contact_description}
-            </p>
-            
-            <a 
-              href={`mailto:${siteSettings.contact_email}`}
-              className="inline-block px-12 py-5 bg-white text-black rounded-full text-sm font-medium tracking-[0.1em] uppercase hover:scale-105 transition-transform duration-300"
-            >
-              Start a Project
-            </a>
+      <section
+        id="contact"
+        className="bg-white text-black border-t border-black/10 flex flex-col"
+      >
+        <div className="px-5 md:px-12 py-24 md:py-36">
+          <div className="max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-end">
+              <div className="lg:col-span-8">
+                <div className="inline-flex items-center gap-2 border border-black/15 rounded-full px-4 py-2 mb-8">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span className="text-[10px] md:text-xs uppercase tracking-[0.18em] font-medium">
+                    Available for new projects
+                  </span>
+                </div>
+
+                <h2 className="text-5xl sm:text-6xl md:text-8xl lg:text-9xl font-bold tracking-tighter leading-[0.88] uppercase">
+                  {renderMultilineTitle(siteSettings.contact_heading)}
+                </h2>
+              </div>
+
+              <div className="lg:col-span-4 lg:pb-2">
+                <p className="text-black/60 text-base md:text-lg leading-relaxed mb-8 max-w-md">
+                  {siteSettings.contact_description}
+                </p>
+
+                <div className="flex flex-col gap-3">
+                  {whatsappHref && (
+                    <a
+                      href={whatsappHref}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="w-full min-h-16 px-6 bg-black text-white flex items-center justify-between gap-4 text-sm font-medium tracking-[0.08em] uppercase hover:scale-[1.01] transition-transform"
+                    >
+                      <span className="flex items-center gap-3">
+                        <FaWhatsapp size={22} />
+                        WhatsApp
+                      </span>
+                      <ArrowRight size={18} />
+                    </a>
+                  )}
+
+                  <a
+                    href={`mailto:${siteSettings.contact_email}`}
+                    className="w-full min-h-16 px-6 border border-black/20 flex items-center justify-between gap-4 text-sm font-medium tracking-[0.08em] uppercase hover:bg-black hover:text-white transition-colors"
+                  >
+                    <span className="flex items-center gap-3">
+                      <Mail size={20} />
+                      Email me
+                    </span>
+                    <ArrowRight size={18} />
+                  </a>
+                </div>
+
+                <div className="mt-6 text-sm text-black/50">
+                  {whatsappHref && (
+                    <p className="mb-1">{siteSettings.whatsapp_number}</p>
+                  )}
+                  <p>{siteSettings.contact_email}</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Footer */}
-        <footer className="w-full border-t border-white/10 py-12 px-6 md:px-12 bg-zinc-950">
+        <footer className="w-full border-t border-black/10 py-10 px-6 md:px-12 bg-[#f3f3f3]">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
             <div className="text-center md:text-left">
-              <h3 className="text-xl tracking-[0.15em] font-light mb-2">{PORTFOLIO_DATA.name.toUpperCase()}</h3>
-              <p className="text-gray-500 text-sm">{PORTFOLIO_DATA.roles.join(' · ')}</p>
+              <h3 className="text-xl tracking-[0.15em] font-medium mb-2">
+                {PORTFOLIO_DATA.name.toUpperCase()}
+              </h3>
+              <p className="text-black/45 text-sm">{siteSettings.hero_roles}</p>
             </div>
-            
-            <div className="flex gap-6">
-              <a href={`mailto:${siteSettings.contact_email}`} className="text-gray-400 hover:text-white transition-colors p-2 border border-white/10 rounded-full hover:bg-white/5">
+
+            <div className="flex gap-3">
+              {whatsappHref && (
+                <a
+                  href={whatsappHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="WhatsApp"
+                  className="text-black/55 hover:text-black transition-colors p-3 border border-black/10 rounded-full hover:bg-black/5"
+                >
+                  <FaWhatsapp size={18} />
+                </a>
+              )}
+              <a
+                href={`mailto:${siteSettings.contact_email}`}
+                aria-label="Email"
+                className="text-black/55 hover:text-black transition-colors p-3 border border-black/10 rounded-full hover:bg-black/5"
+              >
                 <Mail size={18} />
               </a>
-              <a href={siteSettings.instagram_url} target="_blank" rel="noreferrer" className="text-gray-400 hover:text-white transition-colors p-2 border border-white/10 rounded-full hover:bg-white/5">
+              <a
+                href={siteSettings.instagram_url}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Instagram"
+                className="text-black/55 hover:text-black transition-colors p-3 border border-black/10 rounded-full hover:bg-black/5"
+              >
                 <FaInstagram size={18} />
               </a>
-              <a href={siteSettings.linkedin_url} target="_blank" rel="noreferrer" className="text-gray-400 hover:text-white transition-colors p-2 border border-white/10 rounded-full hover:bg-white/5">
+              <a
+                href={siteSettings.linkedin_url}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="LinkedIn"
+                className="text-black/55 hover:text-black transition-colors p-3 border border-black/10 rounded-full hover:bg-black/5"
+              >
                 <FaLinkedinIn size={18} />
               </a>
-               <a href={siteSettings.tiktok_url} target="_blank" rel="noreferrer" className="text-gray-400 hover:text-white transition-colors p-2 border border-white/10 rounded-full hover:bg-white/5 flex items-center justify-center w-[36px] h-[36px]">
-                <FaTiktok size={16} />
+              <a
+                href={siteSettings.tiktok_url}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="TikTok"
+                className="text-black/55 hover:text-black transition-colors p-3 border border-black/10 rounded-full hover:bg-black/5"
+              >
+                <FaTiktok size={17} />
               </a>
             </div>
           </div>
-          
-          <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center text-xs text-gray-600">
-            <p>Based in {PORTFOLIO_DATA.location}</p>
+
+          <div className="max-w-7xl mx-auto mt-10 pt-7 border-t border-black/10 flex flex-col md:flex-row justify-between items-center gap-2 text-xs text-black/40">
+            <p>{siteSettings.hero_location_line}</p>
             <p>&copy; {new Date().getFullYear()} {PORTFOLIO_DATA.name}. All rights reserved.</p>
           </div>
         </footer>

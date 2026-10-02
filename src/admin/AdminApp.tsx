@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   Loader2,
   LogOut,
+  Menu,
   Plus,
   RefreshCw,
   Save,
@@ -332,6 +333,7 @@ function Dashboard({ session, role }) {
   const [editingProject, setEditingProject] = useState(null)
   const [showreelOpen, setShowreelOpen] = useState(false)
   const [contentOpen, setContentOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const isAdmin = role === 'admin'
 
   const publishedCount = useMemo(
@@ -418,66 +420,143 @@ function Dashboard({ session, role }) {
 
   return (
     <div className="min-h-screen bg-[#090909] text-white">
-      <header className="border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
-          <div>
-            <p className="font-medium tracking-[0.15em]">
-              YAËL NOUKIMI
-            </p>
-            <div className="flex items-center gap-3 mt-1">
-              <p className="text-xs text-gray-600">
+      <header className="border-b border-white/10 sticky top-0 z-40 bg-[#090909]/95 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="min-h-[74px] flex justify-between items-center gap-4">
+            <div className="min-w-0">
+              <div className="flex items-center gap-3">
+                <p className="font-medium tracking-[0.13em] text-sm sm:text-base whitespace-nowrap">
+                  YAËL NOUKIMI
+                </p>
+
+                <span className={`md:hidden text-[9px] uppercase tracking-[0.14em] px-2 py-1 border ${
+                  isAdmin
+                    ? 'text-amber-300 border-amber-500/20 bg-amber-500/5'
+                    : 'text-cyan-300 border-cyan-500/20 bg-cyan-500/5'
+                }`}>
+                  {role}
+                </span>
+              </div>
+
+              <div className="hidden md:flex items-center gap-3 mt-1">
+                <p className="text-xs text-gray-600">
+                  Portfolio Administration
+                </p>
+                <span className={`text-[10px] uppercase tracking-[0.15em] px-2 py-1 border ${
+                  isAdmin
+                    ? 'text-amber-300 border-amber-500/20 bg-amber-500/5'
+                    : 'text-cyan-300 border-cyan-500/20 bg-cyan-500/5'
+                }`}>
+                  {role}
+                </span>
+              </div>
+
+              <p className="md:hidden text-[10px] text-gray-600 mt-1 truncate">
                 Portfolio Administration
               </p>
-              <span className={`text-[10px] uppercase tracking-[0.15em] px-2 py-1 border ${
-                isAdmin
-                  ? 'text-amber-300 border-amber-500/20 bg-amber-500/5'
-                  : 'text-cyan-300 border-cyan-500/20 bg-cyan-500/5'
-              }`}>
-                {role}
-              </span>
             </div>
+
+            <div className="hidden md:flex items-center gap-6">
+              <button
+                onClick={() => setContentOpen(true)}
+                className="text-gray-400 hover:text-white transition flex items-center gap-2 text-sm"
+              >
+                <Settings2 size={16} />
+                Contenu
+              </button>
+
+              <button
+                onClick={() => setShowreelOpen(true)}
+                className="text-gray-400 hover:text-white transition flex items-center gap-2 text-sm"
+              >
+                <Clapperboard size={16} />
+                Showreel
+              </button>
+
+              <a
+                href="/"
+                target="_blank"
+                rel="noreferrer"
+                className="text-gray-400 hover:text-white transition flex items-center gap-2 text-sm"
+              >
+                <Eye size={16} />
+                Voir le site
+              </a>
+
+              <button
+                onClick={handleLogout}
+                className="text-gray-400 hover:text-white transition"
+                aria-label="Se déconnecter"
+                title="Se déconnecter"
+              >
+                <LogOut size={19} />
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((open) => !open)}
+              className="md:hidden w-11 h-11 shrink-0 border border-white/10 bg-white/[0.03] flex items-center justify-center text-gray-300 hover:text-white hover:border-white/20 transition"
+              aria-label={mobileMenuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+              aria-expanded={mobileMenuOpen}
+            >
+              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
           </div>
 
-          <div className="flex items-center gap-6">
-            <button
-              onClick={() => setContentOpen(true)}
-              className="text-gray-400 hover:text-white transition flex items-center gap-2 text-sm"
-            >
-              <Settings2 size={16} />
-              Contenu
-            </button>
+          {mobileMenuOpen && (
+            <div className="md:hidden pb-4">
+              <div className="border border-white/10 bg-[#111] p-2 grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false)
+                    setContentOpen(true)
+                  }}
+                  className="min-h-12 px-4 flex items-center gap-3 text-sm text-gray-300 bg-white/[0.03] hover:bg-white/[0.06] transition"
+                >
+                  <Settings2 size={17} />
+                  Contenu
+                </button>
 
-            <button
-              onClick={() => setShowreelOpen(true)}
-              className="text-gray-400 hover:text-white transition flex items-center gap-2 text-sm"
-            >
-              <Clapperboard size={16} />
-              Showreel
-            </button>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false)
+                    setShowreelOpen(true)
+                  }}
+                  className="min-h-12 px-4 flex items-center gap-3 text-sm text-gray-300 bg-white/[0.03] hover:bg-white/[0.06] transition"
+                >
+                  <Clapperboard size={17} />
+                  Showreel
+                </button>
 
-            <a
-              href="/"
-              target="_blank"
-              rel="noreferrer"
-              className="text-gray-400 hover:text-white transition flex items-center gap-2 text-sm"
-            >
-              <Eye size={16} />
-              Voir le site
-            </a>
+                <a
+                  href="/"
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="min-h-12 px-4 flex items-center gap-3 text-sm text-gray-300 bg-white/[0.03] hover:bg-white/[0.06] transition"
+                >
+                  <Eye size={17} />
+                  Voir le site
+                </a>
 
-            <button
-              onClick={handleLogout}
-              className="text-gray-400 hover:text-white transition"
-              aria-label="Se déconnecter"
-              title="Se déconnecter"
-            >
-              <LogOut size={19} />
-            </button>
-          </div>
+                <button
+                  onClick={async () => {
+                    setMobileMenuOpen(false)
+                    await handleLogout()
+                  }}
+                  className="min-h-12 px-4 flex items-center gap-3 text-sm text-red-300 bg-red-500/[0.05] hover:bg-red-500/[0.09] transition"
+                >
+                  <LogOut size={17} />
+                  Déconnexion
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-12">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-14">
           <div>
             <p className="text-xs tracking-[0.2em] uppercase text-gray-600 mb-3">
@@ -650,6 +729,7 @@ function SiteContentManager({ session, onClose }) {
     contact_heading: '',
     contact_description: '',
     contact_email: '',
+    whatsapp_number: '',
     instagram_url: '',
     tiktok_url: '',
     linkedin_url: '',
@@ -688,6 +768,7 @@ function SiteContentManager({ session, onClose }) {
         contact_heading,
         contact_description,
         contact_email,
+        whatsapp_number,
         instagram_url,
         tiktok_url,
         linkedin_url
@@ -710,6 +791,7 @@ function SiteContentManager({ session, onClose }) {
         contact_heading: data?.contact_heading ?? '',
         contact_description: data?.contact_description ?? '',
         contact_email: data?.contact_email ?? '',
+        whatsapp_number: data?.whatsapp_number ?? '',
         instagram_url: data?.instagram_url ?? '',
         tiktok_url: data?.tiktok_url ?? '',
         linkedin_url: data?.linkedin_url ?? '',
@@ -754,6 +836,7 @@ function SiteContentManager({ session, onClose }) {
         contact_heading: cleanText(form.contact_heading),
         contact_description: cleanText(form.contact_description),
         contact_email: cleanText(form.contact_email),
+        whatsapp_number: cleanText(form.whatsapp_number) || null,
         instagram_url: cleanText(form.instagram_url),
         tiktok_url: cleanText(form.tiktok_url),
         linkedin_url: cleanText(form.linkedin_url),
@@ -954,6 +1037,18 @@ function SiteContentManager({ session, onClose }) {
                       onChange={(e) => update('contact_email', e.target.value)}
                       className="admin-input"
                     />
+                  </Field>
+
+                  <Field label="WhatsApp">
+                    <input
+                      value={form.whatsapp_number}
+                      onChange={(e) => update('whatsapp_number', e.target.value)}
+                      className="admin-input"
+                      placeholder="+39 351 234 5678"
+                    />
+                    <p className="text-[11px] text-gray-600 mt-2">
+                      Mets le numéro avec l’indicatif pays. Exemple : +39 pour l’Italie, +237 pour le Cameroun.
+                    </p>
                   </Field>
 
                   <Field label="Instagram">
