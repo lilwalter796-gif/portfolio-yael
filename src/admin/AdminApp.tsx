@@ -129,6 +129,12 @@ function cleanText(value) {
   return typeof value === 'string' ? value.trim() : ''
 }
 
+function muxPlaybackIdFromUrl(url = '') {
+  return typeof url === 'string' && url.startsWith('mux://')
+    ? url.replace('mux://', '').trim()
+    : ''
+}
+
 export default function AdminApp() {
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -742,6 +748,184 @@ function SiteContentManager({ session, onClose }) {
   useEffect(() => {
     loadContent()
   }, [])
+
+  useEffect(() => {
+    let active = true
+
+    async function loadProjectVideos() {
+      if (!project?.id) {
+        const legacyUrl = cleanText(project?.video_url)
+
+        if (legacyUrl) {
+          setProjectVideos([
+            {
+              _client_id: crypto.randomUUID(),
+              title: 'Main Film',
+              video_url: legacyUrl,
+              mux_asset_id: null,
+              video_type: 'Main Film',
+              orientation: 'horizontal',
+              is_featured: true,
+              sort_order: 0,
+            },
+          ])
+        }
+
+        setVideosLoading(false)
+        return
+      }
+
+      setVideosLoading(true)
+
+      const { data, error: videosError } = await supabase
+        .from('project_videos')
+        .select('*')
+        .eq('project_id', project.id)
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: true })
+
+      if (!active) return
+
+      if (videosError) {
+        setError(videosError.message)
+        setVideosLoading(false)
+        return
+      }
+
+      if ((data ?? []).length > 0) {
+        setProjectVideos(
+          data.map((video) => ({
+            ...video,
+            _client_id: video.id,
+          })),
+        )
+      } else if (cleanText(project.video_url)) {
+        // Filet de sécurité pendant la migration.
+        setProjectVideos([
+          {
+            _client_id: crypto.randomUUID(),
+            title: 'Main Film',
+            video_url: project.video_url,
+            mux_asset_id: null,
+            video_type: 'Main Film',
+            orientation: 'horizontal',
+            is_featured: true,
+            sort_order: 0,
+          },
+        ])
+      }
+
+      setVideosLoading(false)
+    }
+
+    loadProjectVideos()
+
+    return () => {
+      active = false
+    }
+  }, [project?.id])
+
+  function updateProjectVideo(clientId, field, value) {
+    setProjectVideos((current) =>
+      current.map((video) => {
+        if (field === 'is_featured') {
+          return {
+            ...video,
+            is_featured: video._client_id === clientId,
+          }
+        }
+
+        if (video._client_id !== clientId) return video
+
+        return {
+          ...video,
+          [field]: value,
+        }
+      }),
+    )
+  }
+
+  function removeProjectVideo(clientId) {
+    setProjectVideos((current) => {
+      const removed = current.find((video) => video._client_id === clientId)
+      const next = current.filter((video) => video._client_id !== clientId)
+
+      if (removed?.is_featured && next.length > 0) {
+        next[0] = {
+          ...next[0],
+          is_featured: true,
+        }
+      }
+
+      return next
+    })
+  }
+
+  function moveProjectVideo(clientId, direction) {
+    setProjectVideos((current) => {
+      const index = current.findIndex((video) => video._client_id === clientId)
+      if (index < 0) return current
+
+      const targetIndex = index + direction
+      if (targetIndex < 0 || targetIndex >= current.length) return current
+
+      const next = [...current]
+      const [item] = next.splice(index, 1)
+      next.splice(targetIndex, 0, item)
+      return next
+    })
+  }
+
+  function appendProjectVideo(videoUrl, muxAssetId = null) {
+    const cleanUrl = cleanText(videoUrl)
+    if (!cleanUrl) return
+
+    setProjectVideos((current) => {
+      const shouldBeFeatured =
+        current.length === 0 || Boolean(newVideoMeta.is_featured)
+
+      const nextVideo = {
+        _client_id: crypto.randomUUID(),
+        title:
+          cleanText(newVideoMeta.title) ||
+          `Film ${String(current.length + 1).padStart(2, '0')}`,
+        video_url: cleanUrl,
+        mux_asset_id: cleanText(muxAssetId) || null,
+        video_type: cleanText(newVideoMeta.video_type) || null,
+        orientation: newVideoMeta.orientation || 'horizontal',
+        is_featured: shouldBeFeatured,
+        sort_order: current.length,
+      }
+
+      const existing = shouldBeFeatured
+        ? current.map((video) => ({
+            ...video,
+            is_featured: false,
+          }))
+        : current
+
+      return [...existing, nextVideo]
+    })
+
+    setNewVideoMeta({
+      title: '',
+      video_type: '',
+      orientation: 'horizontal',
+      is_featured: false,
+      external_url: '',
+    })
+    setUploaderKey((value) => value + 1)
+  }
+
+  function addExternalVideo() {
+    if (!cleanText(newVideoMeta.external_url)) {
+      setError("Colle d'abord une URL vidéo.")
+      return
+    }
+
+    setError('')
+    appendProjectVideo(newVideoMeta.external_url)
+  }
 
   function update(field, value) {
     setForm((current) => ({
@@ -1529,6 +1713,16 @@ function ProjectEditor({
   const muxUploadIdRef = useRef('')
   const [muxVideoState, setMuxVideoState] = useState('')
   const [muxVideoMessage, setMuxVideoMessage] = useState('')
+  const [projectVideos, setProjectVideos] = useState([])
+  const [videosLoading, setVideosLoading] = useState(Boolean(project?.id))
+  const [uploaderKey, setUploaderKey] = useState(0)
+  const [newVideoMeta, setNewVideoMeta] = useState({
+    title: '',
+    video_type: '',
+    orientation: 'horizontal',
+    is_featured: false,
+    external_url: '',
+  })
 
   function update(field, value) {
     setForm((current) => ({
@@ -1661,15 +1855,11 @@ function ProjectEditor({
     setMuxVideoState('processing')
     setMuxVideoMessage('Upload terminé. Mux prépare maintenant la vidéo…')
 
-    // Environ 6 minutes maximum. Les vidéos courtes sont généralement prêtes bien avant.
     for (let attempt = 0; attempt < 90; attempt += 1) {
       const status = await getMuxUploadStatus(uploadId)
 
       if (status?.status === 'ready' && status?.playbackId) {
-        update('video_url', `mux://${status.playbackId}`)
-        setMuxVideoState('ready')
-        setMuxVideoMessage('Vidéo prête. Clique sur Enregistrer pour l’associer au projet.')
-        return
+        return status
       }
 
       if (
@@ -1689,7 +1879,17 @@ function ProjectEditor({
 
   async function handleMuxUploadSuccess() {
     try {
-      await waitForMuxVideoReady(muxUploadIdRef.current)
+      const status = await waitForMuxVideoReady(muxUploadIdRef.current)
+
+      appendProjectVideo(
+        `mux://${status.playbackId}`,
+        status.assetId ?? null,
+      )
+
+      setMuxVideoState('ready')
+      setMuxVideoMessage(
+        'Vidéo prête et ajoutée au projet. Tu peux en ajouter une autre.'
+      )
     } catch (muxError) {
       setMuxVideoState('error')
       setMuxVideoMessage('')
@@ -1712,6 +1912,39 @@ function ProjectEditor({
     setSaving(true)
     setError('')
 
+    const cleanedVideos = projectVideos
+      .filter((video) => cleanText(video.video_url))
+      .map((video, index) => ({
+        title: cleanText(video.title) || `Film ${String(index + 1).padStart(2, '0')}`,
+        video_url: cleanText(video.video_url),
+        mux_asset_id: cleanText(video.mux_asset_id) || null,
+        video_type: cleanText(video.video_type) || null,
+        orientation: ['horizontal', 'vertical', 'square'].includes(video.orientation)
+          ? video.orientation
+          : 'horizontal',
+        is_featured: Boolean(video.is_featured),
+        sort_order: index,
+      }))
+
+    if (cleanedVideos.length > 0 && !cleanedVideos.some((video) => video.is_featured)) {
+      cleanedVideos[0].is_featured = true
+    }
+
+    // Une seule vidéo principale.
+    let featuredFound = false
+    cleanedVideos.forEach((video) => {
+      if (video.is_featured && !featuredFound) {
+        featuredFound = true
+      } else if (video.is_featured) {
+        video.is_featured = false
+      }
+    })
+
+    const featuredVideo =
+      cleanedVideos.find((video) => video.is_featured) ||
+      cleanedVideos[0] ||
+      null
+
     const payload = {
       title: cleanText(form.title),
       slug: cleanText(form.slug) || slugify(form.title),
@@ -1724,8 +1957,9 @@ function ProjectEditor({
         .map((item) => item.trim())
         .filter(Boolean),
       thumbnail_url: cleanText(form.thumbnail_url) || null,
-      preview_video_url: cleanText(form.preview_video_url) || null,
-      video_url: cleanText(form.video_url) || null,
+      preview_video_url: null,
+      // On garde ce champ synchronisé pour compatibilité avec les anciens builds.
+      video_url: featuredVideo?.video_url || null,
       gallery: galleryText
         .split('\n')
         .map((item) => item.trim())
@@ -1754,6 +1988,8 @@ function ProjectEditor({
         .from('projects')
         .update(payload)
         .eq('id', project.id)
+        .select('id')
+        .single()
     } else {
       result = await supabase
         .from('projects')
@@ -1761,10 +1997,30 @@ function ProjectEditor({
           ...payload,
           created_by: session.user.id,
         })
+        .select('id')
+        .single()
     }
 
     if (result.error) {
       setError(result.error.message)
+      setSaving(false)
+      return
+    }
+
+    const projectId = result.data?.id || project?.id
+
+    const { error: videosError } = await supabase.rpc(
+      'replace_project_videos',
+      {
+        p_project_id: projectId,
+        p_videos: cleanedVideos,
+      },
+    )
+
+    if (videosError) {
+      setError(
+        `Le projet a été enregistré, mais les vidéos n'ont pas pu être synchronisées : ${videosError.message}`,
+      )
       setSaving(false)
       return
     }
@@ -1940,27 +2196,245 @@ function ProjectEditor({
               </Field>
 
               <Field
-                label="Vidéos du projet"
-                hint="La même vidéo Mux sert sur la page projet et en preview au survol"
+                label="Films du projet"
+                hint="Ajoute autant de vidéos que nécessaire. La vidéo principale sert aussi de preview sur la page d'accueil."
               >
                 <div className="space-y-6">
-                  <div className="border border-white/10 bg-zinc-950 p-4 md:p-5">
-                    <div className="flex items-start justify-between gap-4 mb-4">
-                      <div>
-                        <p className="text-sm font-medium">Vidéo principale via Mux</p>
-                        <p className="text-[11px] text-gray-600 mt-1">
-                          Sélectionne le fichier original. Cette même vidéo sera utilisée sur la page projet et en preview muette au survol.
-                        </p>
-                      </div>
+                  {videosLoading ? (
+                    <div className="border border-white/10 bg-zinc-950 py-12 flex justify-center">
+                      <Loader2 className="animate-spin text-gray-600" />
+                    </div>
+                  ) : projectVideos.length > 0 ? (
+                    <div className="space-y-3">
+                      {projectVideos.map((video, index) => {
+                        const playbackId = muxPlaybackIdFromUrl(video.video_url)
+                        const previewImage = playbackId
+                          ? `https://image.mux.com/${playbackId}/thumbnail.jpg?width=480&fit_mode=smartcrop`
+                          : form.thumbnail_url
 
-                      {String(form.video_url ?? '').startsWith('mux://') && (
-                        <span className="text-[10px] uppercase tracking-[0.15em] text-emerald-400">
-                          Prête
-                        </span>
-                      )}
+                        return (
+                          <div
+                            key={video._client_id}
+                            className={`border p-4 md:p-5 ${
+                              video.is_featured
+                                ? 'border-emerald-500/30 bg-emerald-500/[0.03]'
+                                : 'border-white/10 bg-zinc-950'
+                            }`}
+                          >
+                            <div className="grid grid-cols-1 md:grid-cols-[150px_1fr] gap-5">
+                              <div
+                                className={`bg-black overflow-hidden ${
+                                  video.orientation === 'vertical'
+                                    ? 'aspect-[9/16] md:max-h-56'
+                                    : video.orientation === 'square'
+                                    ? 'aspect-square'
+                                    : 'aspect-video'
+                                }`}
+                              >
+                                {previewImage ? (
+                                  <img
+                                    src={previewImage}
+                                    alt={video.title || `Film ${index + 1}`}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-gray-700 text-xs">
+                                    VIDEO
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="space-y-4 min-w-0">
+                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-[10px] text-gray-600 tracking-[0.18em] uppercase">
+                                      Film {String(index + 1).padStart(2, '0')}
+                                    </span>
+
+                                    {video.is_featured && (
+                                      <span className="text-[9px] uppercase tracking-[0.14em] px-2 py-1 border border-emerald-500/20 text-emerald-400">
+                                        Principal
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => moveProjectVideo(video._client_id, -1)}
+                                      disabled={index === 0}
+                                      className="w-8 h-8 border border-white/10 text-gray-500 hover:text-white disabled:opacity-20"
+                                      title="Monter"
+                                    >
+                                      ↑
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => moveProjectVideo(video._client_id, 1)}
+                                      disabled={index === projectVideos.length - 1}
+                                      className="w-8 h-8 border border-white/10 text-gray-500 hover:text-white disabled:opacity-20"
+                                      title="Descendre"
+                                    >
+                                      ↓
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => removeProjectVideo(video._client_id)}
+                                      className="w-8 h-8 border border-red-500/20 text-red-400 hover:text-red-300"
+                                      title="Retirer"
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                  <input
+                                    value={video.title ?? ''}
+                                    onChange={(e) =>
+                                      updateProjectVideo(
+                                        video._client_id,
+                                        'title',
+                                        e.target.value,
+                                      )
+                                    }
+                                    className="admin-input"
+                                    placeholder="Aftermovie"
+                                  />
+
+                                  <input
+                                    value={video.video_type ?? ''}
+                                    onChange={(e) =>
+                                      updateProjectVideo(
+                                        video._client_id,
+                                        'video_type',
+                                        e.target.value,
+                                      )
+                                    }
+                                    className="admin-input"
+                                    placeholder="Aftermovie / Teaser / Reel..."
+                                  />
+
+                                  <select
+                                    value={video.orientation ?? 'horizontal'}
+                                    onChange={(e) =>
+                                      updateProjectVideo(
+                                        video._client_id,
+                                        'orientation',
+                                        e.target.value,
+                                      )
+                                    }
+                                    className="admin-input"
+                                  >
+                                    <option value="horizontal">Horizontal 16:9</option>
+                                    <option value="vertical">Vertical 9:16</option>
+                                    <option value="square">Carré 1:1</option>
+                                  </select>
+
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      updateProjectVideo(
+                                        video._client_id,
+                                        'is_featured',
+                                        true,
+                                      )
+                                    }
+                                    className={`px-4 py-3 border text-xs uppercase tracking-[0.1em] transition ${
+                                      video.is_featured
+                                        ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/[0.05]'
+                                        : 'border-white/10 text-gray-500 hover:text-white hover:border-white/25'
+                                    }`}
+                                  >
+                                    {video.is_featured
+                                      ? 'Vidéo principale'
+                                      : 'Définir comme principale'}
+                                  </button>
+                                </div>
+
+                                <p className="text-[10px] text-gray-700 break-all">
+                                  {video.video_url}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <div className="border border-dashed border-white/15 p-8 text-center">
+                      <p className="text-sm text-gray-400">Aucune vidéo pour ce projet.</p>
+                      <p className="text-xs text-gray-700 mt-2">
+                        La première vidéo ajoutée deviendra automatiquement la vidéo principale.
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="border border-white/10 bg-[#0e0e0e] p-5 md:p-6">
+                    <div className="mb-5">
+                      <p className="text-sm font-medium">+ Ajouter une vidéo</p>
+                      <p className="text-[11px] text-gray-600 mt-1">
+                        Renseigne les informations, puis choisis le fichier à envoyer vers Mux.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
+                      <input
+                        value={newVideoMeta.title}
+                        onChange={(e) =>
+                          setNewVideoMeta((current) => ({
+                            ...current,
+                            title: e.target.value,
+                          }))
+                        }
+                        className="admin-input"
+                        placeholder="Titre : Aftermovie"
+                      />
+
+                      <input
+                        value={newVideoMeta.video_type}
+                        onChange={(e) =>
+                          setNewVideoMeta((current) => ({
+                            ...current,
+                            video_type: e.target.value,
+                          }))
+                        }
+                        className="admin-input"
+                        placeholder="Type : Teaser / Reel / BTS..."
+                      />
+
+                      <select
+                        value={newVideoMeta.orientation}
+                        onChange={(e) =>
+                          setNewVideoMeta((current) => ({
+                            ...current,
+                            orientation: e.target.value,
+                          }))
+                        }
+                        className="admin-input"
+                      >
+                        <option value="horizontal">Horizontal 16:9</option>
+                        <option value="vertical">Vertical 9:16</option>
+                        <option value="square">Carré 1:1</option>
+                      </select>
+
+                      <label className="border border-white/10 px-4 py-3 text-xs text-gray-400 flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={newVideoMeta.is_featured}
+                          onChange={(e) =>
+                            setNewVideoMeta((current) => ({
+                              ...current,
+                              is_featured: e.target.checked,
+                            }))
+                          }
+                        />
+                        Définir comme vidéo principale
+                      </label>
                     </div>
 
                     <MuxUploader
+                      key={uploaderKey}
                       endpoint={createMuxUploadUrl}
                       pausable
                       dynamicChunkSize
@@ -1983,39 +2457,34 @@ function ProjectEditor({
                       </div>
                     )}
 
-                    {String(form.video_url ?? '').startsWith('mux://') && (
-                      <div className="mt-4 border-t border-white/10 pt-4">
-                        <p className="text-[11px] text-gray-600 break-all">
-                          Playback ID : {String(form.video_url).replace('mux://', '')}
-                        </p>
+                    <details className="mt-5 border-t border-white/10 pt-5">
+                      <summary className="cursor-pointer text-xs text-gray-500">
+                        Ajouter une vidéo déjà hébergée
+                      </summary>
+
+                      <div className="mt-4 flex flex-col md:flex-row gap-3">
+                        <input
+                          value={newVideoMeta.external_url}
+                          onChange={(e) =>
+                            setNewVideoMeta((current) => ({
+                              ...current,
+                              external_url: e.target.value,
+                            }))
+                          }
+                          className="admin-input flex-1"
+                          placeholder="YouTube, Vimeo ou URL directe..."
+                        />
+
                         <button
                           type="button"
-                          onClick={() => update('video_url', '')}
-                          className="mt-3 text-xs text-red-400 hover:text-red-300 transition"
+                          onClick={addExternalVideo}
+                          className="border border-white/15 px-5 py-3 text-xs uppercase tracking-[0.1em] text-gray-300 hover:text-white hover:border-white/30 transition"
                         >
-                          Retirer cette vidéo
+                          Ajouter l'URL
                         </button>
                       </div>
-                    )}
+                    </details>
                   </div>
-
-                  <details className="border border-white/10 p-4">
-                    <summary className="cursor-pointer text-xs text-gray-500">
-                      Utiliser une URL vidéo à la place
-                    </summary>
-
-                    <div className="mt-4">
-                      <input
-                        value={form.video_url ?? ''}
-                        onChange={(e) => update('video_url', e.target.value)}
-                        className="admin-input"
-                        placeholder="YouTube, Vimeo ou URL directe .mp4"
-                      />
-                      <p className="text-[11px] leading-relaxed text-gray-700 mt-2">
-                        Garde cette option pour une vidéo déjà hébergée ailleurs.
-                      </p>
-                    </div>
-                  </details>
                 </div>
               </Field>
             </div>

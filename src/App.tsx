@@ -49,20 +49,51 @@ const PORTFOLIO_DATA = {
 const FALLBACK_PROJECT_IMAGE =
   'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?q=80&w=2071&auto=format&fit=crop';
 
-const normalizeProject = (project) => ({
-  id: project.id,
-  slug: project.slug,
-  title: project.title,
-  category: project.category ?? '',
-  year: project.year ? String(project.year) : '',
-  location: project.location ?? '',
-  thumbnail: project.thumbnail_url || FALLBACK_PROJECT_IMAGE,
-  previewVideo: project.preview_video_url || '',
-  video: project.video_url || '',
-  description: project.description ?? '',
-  roles: Array.isArray(project.roles) ? project.roles : [],
-  gallery: Array.isArray(project.gallery) ? project.gallery : [],
-});
+const normalizeProject = (project) => {
+  const databaseVideos = Array.isArray(project.project_videos)
+    ? [...project.project_videos].sort(
+        (a, b) =>
+          Number(a.sort_order ?? 0) - Number(b.sort_order ?? 0) ||
+          String(a.created_at ?? '').localeCompare(String(b.created_at ?? ''))
+      )
+    : [];
+
+  // Compatibilité avec les projets créés avant le système multi-vidéos.
+  const legacyVideos =
+    databaseVideos.length === 0 && project.video_url
+      ? [
+          {
+            id: `legacy-${project.id}`,
+            title: 'Main Film',
+            video_url: project.video_url,
+            video_type: 'Main Film',
+            orientation: 'horizontal',
+            is_featured: true,
+            sort_order: 0,
+          },
+        ]
+      : [];
+
+  const videos = databaseVideos.length > 0 ? databaseVideos : legacyVideos;
+  const featuredVideo =
+    videos.find((video) => video.is_featured) || videos[0] || null;
+
+  return {
+    id: project.id,
+    slug: project.slug,
+    title: project.title,
+    category: project.category ?? '',
+    year: project.year ? String(project.year) : '',
+    location: project.location ?? '',
+    thumbnail: project.thumbnail_url || FALLBACK_PROJECT_IMAGE,
+    previewVideo: project.preview_video_url || '',
+    video: featuredVideo?.video_url || '',
+    videos,
+    description: project.description ?? '',
+    roles: Array.isArray(project.roles) ? project.roles : [],
+    gallery: Array.isArray(project.gallery) ? project.gallery : [],
+  };
+};
 
 const getYouTubeEmbedUrl = (url = '') => {
   try {
@@ -317,6 +348,73 @@ const ProjectDetail = ({ project, projects }) => {
           )}
         </div>
       </div>
+
+      {project.videos.length > 1 && (
+        <section className="max-w-7xl mx-auto px-6 md:px-12 mb-32">
+          <div className="flex items-end justify-between gap-6 border-b border-white/10 pb-5 mb-8">
+            <div>
+              <p className="text-[10px] tracking-[0.2em] uppercase text-gray-600 mb-2">
+                Selected Films
+              </p>
+              <h2 className="text-2xl md:text-4xl font-semibold tracking-tight">
+                More from this project
+              </h2>
+            </div>
+            <p className="text-xs text-gray-600">
+              {project.videos.length - 1} additional video{project.videos.length - 1 > 1 ? 's' : ''}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10">
+            {project.videos
+              .filter((film) => film.video_url !== project.video)
+              .map((film, index) => {
+                const vertical = film.orientation === 'vertical';
+                const square = film.orientation === 'square';
+
+                return (
+                  <article
+                    key={film.id || `${film.video_url}-${index}`}
+                    className={vertical ? 'md:max-w-[430px]' : ''}
+                  >
+                    <div
+                      className={`bg-zinc-950 border border-white/10 overflow-hidden ${
+                        vertical
+                          ? 'aspect-[9/16]'
+                          : square
+                          ? 'aspect-square'
+                          : 'aspect-video'
+                      }`}
+                    >
+                      <ProjectVideoPlayer
+                        url={film.video_url}
+                        poster={project.thumbnail}
+                        title={`${project.title} — ${film.title || `Film ${index + 2}`}`}
+                      />
+                    </div>
+
+                    <div className="pt-4 flex items-start justify-between gap-5">
+                      <div>
+                        <h3 className="text-sm md:text-base font-medium uppercase tracking-[0.08em]">
+                          {film.title || `Film ${index + 2}`}
+                        </h3>
+                        {film.video_type && (
+                          <p className="text-[10px] text-gray-500 uppercase tracking-[0.15em] mt-1">
+                            {film.video_type}
+                          </p>
+                        )}
+                      </div>
+
+                      <span className="text-[10px] uppercase tracking-[0.15em] text-gray-600">
+                        {vertical ? '9:16' : square ? '1:1' : '16:9'}
+                      </span>
+                    </div>
+                  </article>
+                );
+              })}
+          </div>
+        </section>
+      )}
 
       {project.gallery.length > 0 && (
         <div className="max-w-7xl mx-auto px-6 md:px-12 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 mb-32">
