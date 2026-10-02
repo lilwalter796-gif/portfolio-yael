@@ -499,6 +499,9 @@ export default function Portfolio() {
   const [projects, setProjects] = useState([]);
   const [projectsLoading, setProjectsLoading] = useState(true);
   const [projectsError, setProjectsError] = useState('');
+  const [siteSettings, setSiteSettings] = useState({
+    showreel_url: '',
+  });
 
   useEffect(() => {
     let active = true;
@@ -533,6 +536,45 @@ export default function Portfolio() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadSiteSettings = async () => {
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('showreel_url')
+        .eq('id', 'main')
+        .maybeSingle();
+
+      if (!active) return;
+
+      if (error) {
+        console.error('Unable to load site settings:', error);
+        return;
+      }
+
+      setSiteSettings({
+        showreel_url: data?.showreel_url ?? '',
+      });
+    };
+
+    loadSiteSettings();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const showreelMuxPlaybackId =
+    typeof siteSettings.showreel_url === 'string' &&
+    siteSettings.showreel_url.startsWith('mux://')
+      ? siteSettings.showreel_url.replace('mux://', '').trim()
+      : '';
+
+  const showreelPoster = showreelMuxPlaybackId
+    ? `https://image.mux.com/${showreelMuxPlaybackId}/thumbnail.jpg?width=1600&fit_mode=smartcrop`
+    : 'https://images.unsplash.com/photo-1485846234645-a62644f84728?q=80&w=2059&auto=format&fit=crop';
 
   // Handle routing based on hash change (Single Page routing sans React Router)
   useEffect(() => {
@@ -662,16 +704,37 @@ export default function Portfolio() {
 
         {/* Background Video */}
         <div className="absolute inset-0 z-0">
-          <video 
-            autoPlay 
-            loop 
-            muted 
-            playsInline 
-            poster="https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=2025&auto=format&fit=crop"
-            className="w-full h-full object-cover opacity-80"
-          >
-            <source src="/assets/videos/hero-showreel.mp4" type="video/mp4" />
-          </video>
+          {showreelMuxPlaybackId ? (
+            <MuxPlayer
+              playbackId={showreelMuxPlaybackId}
+              streamType="on-demand"
+              autoPlay="muted"
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              videoTitle="Yaël Noukimi Showreel"
+              className="w-full h-full opacity-80 pointer-events-none"
+              style={{
+                width: '100%',
+                height: '100%',
+                '--controls': 'none',
+                '--media-object-fit': 'cover',
+                '--media-object-position': 'center',
+              }}
+            />
+          ) : (
+            <video 
+              autoPlay 
+              loop 
+              muted 
+              playsInline 
+              poster="https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=2025&auto=format&fit=crop"
+              className="w-full h-full object-cover opacity-80"
+            >
+              <source src="/assets/videos/hero-showreel.mp4" type="video/mp4" />
+            </video>
+          )}
           {/* Cinematic Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
           <div className="absolute inset-0 bg-black/20"></div>
@@ -795,26 +858,60 @@ export default function Portfolio() {
 
   const ShowreelSection = () => {
     const [ref, isVisible] = useScrollFade();
-    
+    const [playing, setPlaying] = useState(false);
+
     return (
       <section className="py-20 bg-zinc-950 relative overflow-hidden" ref={ref}>
         <div className="max-w-7xl mx-auto px-4 md:px-12">
-          <div className={`relative aspect-video w-full group cursor-pointer overflow-hidden transition-all duration-1000 transform ${isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}>
-            <img 
-              src="https://images.unsplash.com/photo-1485846234645-a62644f84728?q=80&w=2059&auto=format&fit=crop" 
-              alt="Showreel Thumbnail"
-              className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105 opacity-60 group-hover:opacity-40"
-              loading="lazy"
-            />
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-              <h2 className="text-3xl md:text-5xl font-bold text-white mb-8 tracking-tighter">60 SECONDS OF MY WORK</h2>
-              
-              <button className="w-20 h-20 md:w-24 md:h-24 bg-white rounded-full flex items-center justify-center text-black group-hover:scale-110 transition-transform duration-300 shadow-[0_0_40px_rgba(255,255,255,0.2)]">
-                <Play className="w-8 h-8 md:w-10 md:h-10 ml-2" fill="currentColor" />
+          <div
+            className={`relative aspect-video w-full overflow-hidden transition-all duration-1000 transform ${
+              isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+            }`}
+          >
+            {showreelMuxPlaybackId && playing ? (
+              <MuxPlayer
+                playbackId={showreelMuxPlaybackId}
+                streamType="on-demand"
+                autoPlay
+                poster={showreelPoster}
+                videoTitle="Yaël Noukimi Showreel"
+                accentColor="#ffffff"
+                className="w-full h-full"
+                style={{ width: '100%', height: '100%' }}
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => showreelMuxPlaybackId && setPlaying(true)}
+                className={`absolute inset-0 w-full h-full text-left group ${
+                  showreelMuxPlaybackId ? 'cursor-pointer' : 'cursor-default'
+                }`}
+                aria-label={
+                  showreelMuxPlaybackId ? 'Watch showreel' : 'Showreel coming soon'
+                }
+              >
+                <img 
+                  src={showreelPoster}
+                  alt="Showreel Thumbnail"
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105 opacity-60 group-hover:opacity-40"
+                  loading="lazy"
+                />
+
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+                  <h2 className="text-3xl md:text-5xl font-bold text-white mb-8 tracking-tighter">
+                    60 SECONDS OF MY WORK
+                  </h2>
+
+                  <span className="w-20 h-20 md:w-24 md:h-24 bg-white rounded-full flex items-center justify-center text-black group-hover:scale-110 transition-transform duration-300 shadow-[0_0_40px_rgba(255,255,255,0.2)]">
+                    <Play className="w-8 h-8 md:w-10 md:h-10 ml-2" fill="currentColor" />
+                  </span>
+
+                  <span className="mt-8 text-xs tracking-[0.2em] uppercase text-white font-medium">
+                    {showreelMuxPlaybackId ? 'Watch Showreel' : 'Showreel Coming Soon'}
+                  </span>
+                </div>
               </button>
-              
-              <span className="mt-8 text-xs tracking-[0.2em] uppercase text-white font-medium">Watch Showreel</span>
-            </div>
+            )}
           </div>
         </div>
       </section>

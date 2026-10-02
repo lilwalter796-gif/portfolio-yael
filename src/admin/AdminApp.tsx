@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import MuxUploader from '@mux/mux-uploader-react'
 import {
   CheckCircle2,
+  Clapperboard,
   Edit3,
   Eye,
   EyeOff,
@@ -98,6 +99,8 @@ function cleanText(value) {
 export default function AdminApp() {
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [role, setRole] = useState(null)
+  const [roleLoading, setRoleLoading] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -114,7 +117,44 @@ export default function AdminApp() {
     return () => subscription.unsubscribe()
   }, [])
 
-  if (loading) {
+  useEffect(() => {
+    let active = true
+
+    async function loadRole() {
+      if (!session?.user?.id) {
+        setRole(null)
+        setRoleLoading(false)
+        return
+      }
+
+      setRoleLoading(true)
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('user_id', session.user.id)
+        .maybeSingle()
+
+      if (!active) return
+
+      if (error) {
+        console.error('Role loading error:', error)
+        setRole(null)
+      } else {
+        setRole(data?.role ?? null)
+      }
+
+      setRoleLoading(false)
+    }
+
+    loadRole()
+
+    return () => {
+      active = false
+    }
+  }, [session?.user?.id])
+
+  if (loading || (session && roleLoading)) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center text-white">
         <Loader2 className="animate-spin" size={28} />
@@ -124,7 +164,47 @@ export default function AdminApp() {
 
   if (!session) return <LoginPage />
 
-  return <Dashboard session={session} />
+  if (!['admin', 'editor'].includes(role)) {
+    return <AccessDeniedPage />
+  }
+
+  return <Dashboard session={session} role={role} />
+}
+
+function AccessDeniedPage() {
+  async function handleLogout() {
+    await supabase.auth.signOut()
+  }
+
+  return (
+    <div className="min-h-screen bg-black text-white flex items-center justify-center px-6">
+      <div className="w-full max-w-lg border border-white/10 bg-zinc-950 p-8">
+        <p className="text-xs tracking-[0.25em] uppercase text-red-400 mb-4">
+          Accès refusé
+        </p>
+        <h1 className="text-3xl font-semibold mb-4">
+          Ce compte n’a pas accès à l’administration.
+        </h1>
+        <p className="text-sm leading-relaxed text-gray-500 mb-8">
+          Un rôle admin ou editor doit être attribué à ce compte avant qu’il puisse gérer le portfolio.
+        </p>
+        <div className="flex gap-3">
+          <a
+            href="/"
+            className="border border-white/10 px-5 py-3 text-sm text-gray-300 hover:text-white hover:border-white/30 transition"
+          >
+            Voir le portfolio
+          </a>
+          <button
+            onClick={handleLogout}
+            className="bg-white text-black px-5 py-3 text-sm hover:bg-gray-200 transition"
+          >
+            Se déconnecter
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function LoginPage() {
@@ -212,12 +292,14 @@ function LoginPage() {
   )
 }
 
-function Dashboard({ session }) {
+function Dashboard({ session, role }) {
   const [projects, setProjects] = useState([])
   const [loadingProjects, setLoadingProjects] = useState(true)
   const [error, setError] = useState('')
   const [editorOpen, setEditorOpen] = useState(false)
   const [editingProject, setEditingProject] = useState(null)
+  const [showreelOpen, setShowreelOpen] = useState(false)
+  const isAdmin = role === 'admin'
 
   const publishedCount = useMemo(
     () => projects.filter((project) => project.published).length,
@@ -309,12 +391,29 @@ function Dashboard({ session }) {
             <p className="font-medium tracking-[0.15em]">
               YAËL NOUKIMI
             </p>
-            <p className="text-xs text-gray-600">
-              Portfolio Administration
-            </p>
+            <div className="flex items-center gap-3 mt-1">
+              <p className="text-xs text-gray-600">
+                Portfolio Administration
+              </p>
+              <span className={`text-[10px] uppercase tracking-[0.15em] px-2 py-1 border ${
+                isAdmin
+                  ? 'text-amber-300 border-amber-500/20 bg-amber-500/5'
+                  : 'text-cyan-300 border-cyan-500/20 bg-cyan-500/5'
+              }`}>
+                {role}
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center gap-6">
+            <button
+              onClick={() => setShowreelOpen(true)}
+              className="text-gray-400 hover:text-white transition flex items-center gap-2 text-sm"
+            >
+              <Clapperboard size={16} />
+              Showreel
+            </button>
+
             <a
               href="/"
               target="_blank"
@@ -434,6 +533,7 @@ function Dashboard({ session }) {
                   onEdit={() => editProject(project)}
                   onDelete={() => deleteProject(project)}
                   onTogglePublished={() => togglePublished(project)}
+                  canDelete={isAdmin}
                 />
               ))}
             </div>
@@ -454,6 +554,13 @@ function Dashboard({ session }) {
             setEditingProject(null)
             await loadProjects()
           }}
+        />
+      )}
+
+      {showreelOpen && (
+        <ShowreelManager
+          session={session}
+          onClose={() => setShowreelOpen(false)}
         />
       )}
 
@@ -480,11 +587,308 @@ function Dashboard({ session }) {
   )
 }
 
+
+function ShowreelManager({ session, onClose }) {
+  const uploadIdRef = useRef('')
+  const [showreelUrl, setShowreelUrl] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [videoState, setVideoState] = useState('')
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+
+  const playbackId = showreelUrl.startsWith('mux://')
+    ? showreelUrl.replace('mux://', '').trim()
+    : ''
+
+  const poster = playbackId
+    ? `https://image.mux.com/${playbackId}/thumbnail.jpg?width=1200&fit_mode=smartcrop`
+    : ''
+
+  useEffect(() => {
+    loadSettings()
+  }, [])
+
+  async function loadSettings() {
+    setLoading(true)
+    setError('')
+
+    const { data, error: settingsError } = await supabase
+      .from('site_settings')
+      .select('showreel_url')
+      .eq('id', 'main')
+      .maybeSingle()
+
+    if (settingsError) {
+      setError(settingsError.message)
+    } else {
+      setShowreelUrl(data?.showreel_url ?? '')
+    }
+
+    setLoading(false)
+  }
+
+  async function createMuxUploadUrl() {
+    setError('')
+    setVideoState('creating')
+    setMessage("Préparation de l'upload sécurisé…")
+
+    const { data, error: functionError } = await supabase.functions.invoke(
+      'mux-video',
+      {
+        body: {
+          action: 'create',
+          origin: window.location.origin,
+        },
+      },
+    )
+
+    if (functionError) {
+      setVideoState('error')
+      setMessage('')
+      throw new Error(
+        functionError.message || "Impossible de préparer l'upload Mux.",
+      )
+    }
+
+    if (!data?.url || !data?.uploadId) {
+      setVideoState('error')
+      setMessage('')
+      throw new Error("Mux n'a pas renvoyé d'URL d'upload valide.")
+    }
+
+    uploadIdRef.current = data.uploadId
+    setVideoState('uploading')
+    setMessage('Upload en cours vers Mux…')
+
+    return data.url
+  }
+
+  async function getMuxStatus(uploadId) {
+    const { data, error: functionError } = await supabase.functions.invoke(
+      'mux-video',
+      {
+        body: {
+          action: 'status',
+          uploadId,
+        },
+      },
+    )
+
+    if (functionError) {
+      throw new Error(
+        functionError.message || "Impossible de vérifier l'état de la vidéo.",
+      )
+    }
+
+    return data
+  }
+
+  async function waitUntilReady(uploadId) {
+    setVideoState('processing')
+    setMessage('Upload terminé. Mux prépare le showreel…')
+
+    for (let attempt = 0; attempt < 90; attempt += 1) {
+      const status = await getMuxStatus(uploadId)
+
+      if (status?.status === 'ready' && status?.playbackId) {
+        setShowreelUrl(`mux://${status.playbackId}`)
+        setVideoState('ready')
+        setMessage('Showreel prêt. Clique sur Enregistrer.')
+        return
+      }
+
+      if (
+        ['errored', 'cancelled', 'timed_out'].includes(status?.uploadStatus) ||
+        status?.assetStatus === 'errored'
+      ) {
+        throw new Error(status?.message || "Mux n'a pas pu traiter le showreel.")
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 4000))
+    }
+
+    throw new Error(
+      "La vidéo est envoyée mais Mux met plus de temps que prévu à la préparer.",
+    )
+  }
+
+  async function handleUploadSuccess() {
+    try {
+      await waitUntilReady(uploadIdRef.current)
+    } catch (uploadError) {
+      setVideoState('error')
+      setMessage('')
+      setError(uploadError.message || 'Erreur pendant le traitement Mux.')
+    }
+  }
+
+  function handleUploadError(event) {
+    setVideoState('error')
+    setMessage('')
+    const uploadMessage =
+      event?.detail?.message ||
+      event?.detail ||
+      "L'upload vidéo a échoué."
+    setError(
+      typeof uploadMessage === 'string'
+        ? uploadMessage
+        : "L'upload vidéo a échoué.",
+    )
+  }
+
+  async function saveSettings() {
+    setSaving(true)
+    setError('')
+
+    const { error: saveError } = await supabase
+      .from('site_settings')
+      .update({
+        showreel_url: showreelUrl || null,
+        updated_by: session.user.id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', 'main')
+
+    if (saveError) {
+      setError(saveError.message)
+      setSaving(false)
+      return
+    }
+
+    setSaving(false)
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm overflow-y-auto">
+      <div className="min-h-screen px-4 py-8 md:px-8">
+        <div className="max-w-3xl mx-auto border border-white/10 bg-[#111]">
+          <div className="px-6 py-5 md:px-8 border-b border-white/10 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] tracking-[0.2em] uppercase text-gray-600 mb-2">
+                Site
+              </p>
+              <h2 className="text-2xl font-semibold flex items-center gap-3">
+                <Clapperboard size={22} />
+                Showreel général
+              </h2>
+            </div>
+
+            <button
+              onClick={onClose}
+              className="text-gray-500 hover:text-white transition"
+              aria-label="Fermer"
+            >
+              <X size={22} />
+            </button>
+          </div>
+
+          <div className="p-6 md:p-8 space-y-6">
+            {loading ? (
+              <div className="py-16 flex justify-center">
+                <Loader2 className="animate-spin text-gray-600" />
+              </div>
+            ) : (
+              <>
+                {poster && (
+                  <div className="aspect-video bg-black border border-white/10 overflow-hidden">
+                    <img
+                      src={poster}
+                      alt="Showreel actuel"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+
+                <div className="border border-white/10 bg-zinc-950 p-5">
+                  <p className="text-sm font-medium mb-2">
+                    {playbackId ? 'Remplacer le showreel' : 'Uploader le showreel'}
+                  </p>
+                  <p className="text-xs text-gray-600 mb-5">
+                    Cette vidéo sera utilisée dans le hero de la page d’accueil et dans la section « 60 Seconds of My Work ».
+                  </p>
+
+                  <MuxUploader
+                    endpoint={createMuxUploadUrl}
+                    pausable
+                    dynamicChunkSize
+                    onSuccess={handleUploadSuccess}
+                    onUploadError={handleUploadError}
+                  />
+
+                  {message && (
+                    <p
+                      className={`mt-4 text-xs ${
+                        videoState === 'ready'
+                          ? 'text-emerald-400'
+                          : 'text-gray-400'
+                      }`}
+                    >
+                      {videoState === 'processing' && (
+                        <Loader2
+                          size={14}
+                          className="inline mr-2 animate-spin"
+                        />
+                      )}
+                      {message}
+                    </p>
+                  )}
+                </div>
+
+                {playbackId && (
+                  <div className="border border-white/10 p-4">
+                    <p className="text-[11px] text-gray-600 break-all">
+                      Playback ID : {playbackId}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setShowreelUrl('')}
+                      className="mt-3 text-xs text-red-400 hover:text-red-300 transition"
+                    >
+                      Retirer le showreel
+                    </button>
+                  </div>
+                )}
+
+                {error && (
+                  <div className="border border-red-500/20 bg-red-500/10 text-red-300 p-4 text-sm">
+                    {error}
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+                  <button
+                    onClick={onClose}
+                    className="border border-white/10 px-5 py-3 text-sm text-gray-300 hover:text-white transition"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={saveSettings}
+                    disabled={saving || videoState === 'processing'}
+                    className="bg-white text-black px-6 py-3 text-sm font-medium hover:bg-gray-200 transition disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {saving && <Loader2 size={16} className="animate-spin" />}
+                    Enregistrer
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
 function ProjectRow({
   project,
   onEdit,
   onDelete,
   onTogglePublished,
+  canDelete,
 }) {
   return (
     <div className="px-6 py-5 border-b border-white/10 last:border-b-0 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
@@ -554,13 +958,15 @@ function ProjectRow({
           Modifier
         </button>
 
-        <button
-          onClick={onDelete}
-          className="border border-red-500/10 px-4 py-2.5 text-xs text-red-400 hover:text-red-300 hover:border-red-500/30 transition flex items-center gap-2"
-        >
-          <Trash2 size={14} />
-          Supprimer
-        </button>
+        {canDelete && (
+          <button
+            onClick={onDelete}
+            className="border border-red-500/10 px-4 py-2.5 text-xs text-red-400 hover:text-red-300 hover:border-red-500/30 transition flex items-center gap-2"
+          >
+            <Trash2 size={14} />
+            Supprimer
+          </button>
+        )}
       </div>
     </div>
   )
