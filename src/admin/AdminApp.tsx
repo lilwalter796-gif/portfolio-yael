@@ -17,6 +17,7 @@ import {
   Plus,
   RefreshCw,
   Save,
+  Settings2,
   Trash2,
   Upload,
   X,
@@ -63,6 +64,37 @@ async function uploadImageToSupabase(file) {
 
   const safeName = sanitizeFileName(file.name)
   const path = `projects/${crypto.randomUUID()}-${safeName}`
+
+  const { error } = await supabase.storage
+    .from(MEDIA_BUCKET)
+    .upload(path, file, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: file.type,
+    })
+
+  if (error) throw error
+
+  const { data } = supabase.storage
+    .from(MEDIA_BUCKET)
+    .getPublicUrl(path)
+
+  return data.publicUrl
+}
+
+async function uploadSiteImageToSupabase(file) {
+  if (!file) throw new Error('Aucun fichier sélectionné.')
+
+  if (!file.type.startsWith('image/')) {
+    throw new Error('Le fichier sélectionné doit être une image.')
+  }
+
+  if (file.size > MAX_IMAGE_SIZE) {
+    throw new Error("L'image dépasse 10 Mo.")
+  }
+
+  const safeName = sanitizeFileName(file.name)
+  const path = `site/${crypto.randomUUID()}-${safeName}`
 
   const { error } = await supabase.storage
     .from(MEDIA_BUCKET)
@@ -299,6 +331,7 @@ function Dashboard({ session, role }) {
   const [editorOpen, setEditorOpen] = useState(false)
   const [editingProject, setEditingProject] = useState(null)
   const [showreelOpen, setShowreelOpen] = useState(false)
+  const [contentOpen, setContentOpen] = useState(false)
   const isAdmin = role === 'admin'
 
   const publishedCount = useMemo(
@@ -406,6 +439,14 @@ function Dashboard({ session, role }) {
           </div>
 
           <div className="flex items-center gap-6">
+            <button
+              onClick={() => setContentOpen(true)}
+              className="text-gray-400 hover:text-white transition flex items-center gap-2 text-sm"
+            >
+              <Settings2 size={16} />
+              Contenu
+            </button>
+
             <button
               onClick={() => setShowreelOpen(true)}
               className="text-gray-400 hover:text-white transition flex items-center gap-2 text-sm"
@@ -557,6 +598,13 @@ function Dashboard({ session, role }) {
         />
       )}
 
+      {contentOpen && (
+        <SiteContentManager
+          session={session}
+          onClose={() => setContentOpen(false)}
+        />
+      )}
+
       {showreelOpen && (
         <ShowreelManager
           session={session}
@@ -583,6 +631,388 @@ function Dashboard({ session, role }) {
           resize: vertical;
         }
       `}</style>
+    </div>
+  )
+}
+
+
+
+function SiteContentManager({ session, onClose }) {
+  const [form, setForm] = useState({
+    hero_title: '',
+    hero_roles: '',
+    hero_location_line: '',
+    hero_primary_cta: '',
+    hero_secondary_cta: '',
+    about_heading: '',
+    about_body: '',
+    about_image_url: '',
+    contact_heading: '',
+    contact_description: '',
+    contact_email: '',
+    instagram_url: '',
+    tiktok_url: '',
+    linkedin_url: '',
+  })
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [imageUploading, setImageUploading] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    loadContent()
+  }, [])
+
+  function update(field, value) {
+    setForm((current) => ({
+      ...current,
+      [field]: value,
+    }))
+  }
+
+  async function loadContent() {
+    setLoading(true)
+    setError('')
+
+    const { data, error: loadError } = await supabase
+      .from('site_settings')
+      .select(`
+        hero_title,
+        hero_roles,
+        hero_location_line,
+        hero_primary_cta,
+        hero_secondary_cta,
+        about_heading,
+        about_body,
+        about_image_url,
+        contact_heading,
+        contact_description,
+        contact_email,
+        instagram_url,
+        tiktok_url,
+        linkedin_url
+      `)
+      .eq('id', 'main')
+      .maybeSingle()
+
+    if (loadError) {
+      setError(loadError.message)
+    } else {
+      setForm({
+        hero_title: data?.hero_title ?? '',
+        hero_roles: data?.hero_roles ?? '',
+        hero_location_line: data?.hero_location_line ?? '',
+        hero_primary_cta: data?.hero_primary_cta ?? '',
+        hero_secondary_cta: data?.hero_secondary_cta ?? '',
+        about_heading: data?.about_heading ?? '',
+        about_body: data?.about_body ?? '',
+        about_image_url: data?.about_image_url ?? '',
+        contact_heading: data?.contact_heading ?? '',
+        contact_description: data?.contact_description ?? '',
+        contact_email: data?.contact_email ?? '',
+        instagram_url: data?.instagram_url ?? '',
+        tiktok_url: data?.tiktok_url ?? '',
+        linkedin_url: data?.linkedin_url ?? '',
+      })
+    }
+
+    setLoading(false)
+  }
+
+  async function handleAboutImage(file) {
+    if (!file) return
+
+    setImageUploading(true)
+    setError('')
+
+    try {
+      const publicUrl = await uploadSiteImageToSupabase(file)
+      update('about_image_url', publicUrl)
+    } catch (uploadError) {
+      setError(uploadError.message || "Impossible d'uploader l'image.")
+    } finally {
+      setImageUploading(false)
+    }
+  }
+
+  async function saveContent(e) {
+    e.preventDefault()
+    setSaving(true)
+    setError('')
+
+    const { error: saveError } = await supabase
+      .from('site_settings')
+      .update({
+        hero_title: cleanText(form.hero_title),
+        hero_roles: cleanText(form.hero_roles),
+        hero_location_line: cleanText(form.hero_location_line),
+        hero_primary_cta: cleanText(form.hero_primary_cta),
+        hero_secondary_cta: cleanText(form.hero_secondary_cta),
+        about_heading: cleanText(form.about_heading),
+        about_body: cleanText(form.about_body),
+        about_image_url: cleanText(form.about_image_url) || null,
+        contact_heading: cleanText(form.contact_heading),
+        contact_description: cleanText(form.contact_description),
+        contact_email: cleanText(form.contact_email),
+        instagram_url: cleanText(form.instagram_url),
+        tiktok_url: cleanText(form.tiktok_url),
+        linkedin_url: cleanText(form.linkedin_url),
+        updated_by: session.user.id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', 'main')
+
+    if (saveError) {
+      setError(saveError.message)
+      setSaving(false)
+      return
+    }
+
+    setSaving(false)
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm overflow-y-auto">
+      <div className="min-h-screen px-4 py-8 md:px-8">
+        <div className="max-w-5xl mx-auto border border-white/10 bg-[#111]">
+          <div className="px-6 py-5 md:px-8 border-b border-white/10 flex items-center justify-between sticky top-0 bg-[#111] z-10">
+            <div>
+              <p className="text-[10px] tracking-[0.2em] uppercase text-gray-600 mb-2">
+                Site
+              </p>
+              <h2 className="text-2xl font-semibold flex items-center gap-3">
+                <Settings2 size={22} />
+                Contenu du site
+              </h2>
+            </div>
+
+            <button
+              onClick={onClose}
+              className="text-gray-500 hover:text-white transition"
+              aria-label="Fermer"
+            >
+              <X size={22} />
+            </button>
+          </div>
+
+          {loading ? (
+            <div className="py-20 flex justify-center">
+              <Loader2 className="animate-spin text-gray-600" />
+            </div>
+          ) : (
+            <form onSubmit={saveContent} className="p-6 md:p-8 space-y-10">
+              <section>
+                <p className="text-[10px] tracking-[0.2em] uppercase text-cyan-300 mb-5">
+                  Hero / Accueil
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <Field label="Grand titre">
+                    <textarea
+                      value={form.hero_title}
+                      onChange={(e) => update('hero_title', e.target.value)}
+                      className="admin-input min-h-28 resize-y"
+                      placeholder={"VISUAL STORIES\nTHAT FEEL ALIVE."}
+                    />
+                    <p className="text-[11px] text-gray-600 mt-2">
+                      Une nouvelle ligne dans ce champ crée un saut de ligne sur le site.
+                    </p>
+                  </Field>
+
+                  <Field label="Métiers">
+                    <input
+                      value={form.hero_roles}
+                      onChange={(e) => update('hero_roles', e.target.value)}
+                      className="admin-input"
+                      placeholder="VIDEOMAKER · PHOTOGRAPHER · CONTENT CREATOR"
+                    />
+                  </Field>
+
+                  <Field label="Localisation / disponibilité">
+                    <input
+                      value={form.hero_location_line}
+                      onChange={(e) => update('hero_location_line', e.target.value)}
+                      className="admin-input"
+                      placeholder="BASED IN ITALY · AVAILABLE WORLDWIDE"
+                    />
+                  </Field>
+
+                  <Field label="Bouton principal">
+                    <input
+                      value={form.hero_primary_cta}
+                      onChange={(e) => update('hero_primary_cta', e.target.value)}
+                      className="admin-input"
+                    />
+                  </Field>
+
+                  <Field label="Bouton secondaire">
+                    <input
+                      value={form.hero_secondary_cta}
+                      onChange={(e) => update('hero_secondary_cta', e.target.value)}
+                      className="admin-input"
+                    />
+                  </Field>
+                </div>
+              </section>
+
+              <section className="border-t border-white/10 pt-10">
+                <p className="text-[10px] tracking-[0.2em] uppercase text-cyan-300 mb-5">
+                  À propos
+                </p>
+
+                <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-7 items-start">
+                  <div>
+                    <div className="aspect-[3/4] bg-zinc-950 border border-white/10 overflow-hidden mb-4">
+                      {form.about_image_url ? (
+                        <img
+                          src={form.about_image_url}
+                          alt="Portrait About"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-700 text-sm">
+                          Aucune image
+                        </div>
+                      )}
+                    </div>
+
+                    <label className="border border-dashed border-white/20 min-h-28 flex flex-col items-center justify-center cursor-pointer hover:border-white/40 transition p-4 text-center">
+                      {imageUploading ? (
+                        <>
+                          <Loader2 className="animate-spin mb-2" size={20} />
+                          <span className="text-xs text-gray-500">Upload...</span>
+                        </>
+                      ) : (
+                        <>
+                          <ImagePlus size={20} className="mb-2 text-gray-500" />
+                          <span className="text-xs">Changer le portrait</span>
+                          <span className="text-[10px] text-gray-600 mt-1">
+                            JPG, PNG, WebP ou AVIF · 10 Mo max
+                          </span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={imageUploading}
+                        onChange={(e) => handleAboutImage(e.target.files?.[0])}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="space-y-5">
+                    <Field label="Titre / introduction">
+                      <textarea
+                        value={form.about_heading}
+                        onChange={(e) => update('about_heading', e.target.value)}
+                        className="admin-input min-h-28 resize-y"
+                      />
+                    </Field>
+
+                    <Field label="Texte À propos">
+                      <textarea
+                        value={form.about_body}
+                        onChange={(e) => update('about_body', e.target.value)}
+                        className="admin-input min-h-72 resize-y"
+                      />
+                      <p className="text-[11px] text-gray-600 mt-2">
+                        Laisse une ligne vide entre deux paragraphes.
+                      </p>
+                    </Field>
+                  </div>
+                </div>
+              </section>
+
+              <section className="border-t border-white/10 pt-10">
+                <p className="text-[10px] tracking-[0.2em] uppercase text-cyan-300 mb-5">
+                  Contact
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <Field label="Grand titre">
+                    <textarea
+                      value={form.contact_heading}
+                      onChange={(e) => update('contact_heading', e.target.value)}
+                      className="admin-input min-h-28 resize-y"
+                    />
+                  </Field>
+
+                  <Field label="Description">
+                    <textarea
+                      value={form.contact_description}
+                      onChange={(e) => update('contact_description', e.target.value)}
+                      className="admin-input min-h-28 resize-y"
+                    />
+                  </Field>
+
+                  <Field label="Email">
+                    <input
+                      type="email"
+                      value={form.contact_email}
+                      onChange={(e) => update('contact_email', e.target.value)}
+                      className="admin-input"
+                    />
+                  </Field>
+
+                  <Field label="Instagram">
+                    <input
+                      value={form.instagram_url}
+                      onChange={(e) => update('instagram_url', e.target.value)}
+                      className="admin-input"
+                      placeholder="https://instagram.com/..."
+                    />
+                  </Field>
+
+                  <Field label="TikTok">
+                    <input
+                      value={form.tiktok_url}
+                      onChange={(e) => update('tiktok_url', e.target.value)}
+                      className="admin-input"
+                      placeholder="https://tiktok.com/@..."
+                    />
+                  </Field>
+
+                  <Field label="LinkedIn">
+                    <input
+                      value={form.linkedin_url}
+                      onChange={(e) => update('linkedin_url', e.target.value)}
+                      className="admin-input"
+                      placeholder="https://linkedin.com/in/..."
+                    />
+                  </Field>
+                </div>
+              </section>
+
+              {error && (
+                <div className="border border-red-500/20 bg-red-500/10 text-red-300 p-4 text-sm">
+                  {error}
+                </div>
+              )}
+
+              <div className="flex justify-end gap-3 pt-6 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="border border-white/10 px-5 py-3 text-sm text-gray-300 hover:text-white transition"
+                >
+                  Annuler
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={saving || imageUploading}
+                  className="bg-white text-black px-6 py-3 text-sm font-medium hover:bg-gray-200 transition disabled:opacity-50 flex items-center gap-2"
+                >
+                  {saving && <Loader2 size={16} className="animate-spin" />}
+                  Enregistrer
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

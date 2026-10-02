@@ -501,6 +501,25 @@ export default function Portfolio() {
   const [projectsError, setProjectsError] = useState('');
   const [siteSettings, setSiteSettings] = useState({
     showreel_url: '',
+    hero_title: 'VISUAL STORIES\nTHAT FEEL ALIVE.',
+    hero_roles: 'VIDEOMAKER · PHOTOGRAPHER · CONTENT CREATOR',
+    hero_location_line: 'BASED IN ITALY · AVAILABLE WORLDWIDE',
+    hero_primary_cta: "LET'S WORK TOGETHER",
+    hero_secondary_cta: 'VIEW MY WORK',
+    about_heading: "Hi, I'm Yaël. I'm a videomaker, photographer and content creator based in Italy.",
+    about_body: [
+      "My work combines creativity, storytelling and digital communication to create visual content designed not only to look good, but to communicate an idea, an atmosphere or a brand identity.",
+      "I've worked on events, promotional campaigns, social media content and audiovisual projects, handling different stages of production — from concept and shooting to editing and final delivery.",
+      "Alongside my personal work, I co-founded Visora, an audiovisual project focused on video production, photography and visual communication.",
+      "I'm currently studying Management Engineering (Ingegneria Gestionale) at the University of Modena and Reggio Emilia, developing skills that connect creativity, technology and business.",
+    ].join('\n\n'),
+    about_image_url: '',
+    contact_heading: "LET'S CREATE\nSOMETHING\nMEMORABLE.",
+    contact_description: 'Available for freelance projects, collaborations and professional opportunities.',
+    contact_email: PORTFOLIO_DATA.email,
+    instagram_url: PORTFOLIO_DATA.socials.instagram,
+    tiktok_url: PORTFOLIO_DATA.socials.tiktok,
+    linkedin_url: PORTFOLIO_DATA.socials.linkedin,
   });
 
   useEffect(() => {
@@ -543,7 +562,23 @@ export default function Portfolio() {
     const loadSiteSettings = async () => {
       const { data, error } = await supabase
         .from('site_settings')
-        .select('showreel_url')
+        .select(`
+          showreel_url,
+          hero_title,
+          hero_roles,
+          hero_location_line,
+          hero_primary_cta,
+          hero_secondary_cta,
+          about_heading,
+          about_body,
+          about_image_url,
+          contact_heading,
+          contact_description,
+          contact_email,
+          instagram_url,
+          tiktok_url,
+          linkedin_url
+        `)
         .eq('id', 'main')
         .maybeSingle();
 
@@ -554,9 +589,24 @@ export default function Portfolio() {
         return;
       }
 
-      setSiteSettings({
+      setSiteSettings((current) => ({
+        ...current,
         showreel_url: data?.showreel_url ?? '',
-      });
+        hero_title: data?.hero_title || current.hero_title,
+        hero_roles: data?.hero_roles || current.hero_roles,
+        hero_location_line: data?.hero_location_line || current.hero_location_line,
+        hero_primary_cta: data?.hero_primary_cta || current.hero_primary_cta,
+        hero_secondary_cta: data?.hero_secondary_cta || current.hero_secondary_cta,
+        about_heading: data?.about_heading || current.about_heading,
+        about_body: data?.about_body || current.about_body,
+        about_image_url: data?.about_image_url ?? '',
+        contact_heading: data?.contact_heading || current.contact_heading,
+        contact_description: data?.contact_description || current.contact_description,
+        contact_email: data?.contact_email || current.contact_email,
+        instagram_url: data?.instagram_url || current.instagram_url,
+        tiktok_url: data?.tiktok_url || current.tiktok_url,
+        linkedin_url: data?.linkedin_url || current.linkedin_url,
+      }));
     };
 
     loadSiteSettings();
@@ -575,6 +625,21 @@ export default function Portfolio() {
   const showreelPoster = showreelMuxPlaybackId
     ? `https://image.mux.com/${showreelMuxPlaybackId}/thumbnail.jpg?width=1600&fit_mode=smartcrop`
     : 'https://images.unsplash.com/photo-1485846234645-a62644f84728?q=80&w=2059&auto=format&fit=crop';
+
+  const renderMultilineTitle = (value) =>
+    String(value || '')
+      .split('\n')
+      .map((line, index, lines) => (
+        <React.Fragment key={`${line}-${index}`}>
+          {line}
+          {index < lines.length - 1 && <br />}
+        </React.Fragment>
+      ));
+
+  const aboutParagraphs = String(siteSettings.about_body || '')
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
 
   // Handle routing based on hash change (Single Page routing sans React Router)
   useEffect(() => {
@@ -743,15 +808,15 @@ export default function Portfolio() {
         {/* Main Content - Bottom Left Aligned */}
         <div className="relative z-10 w-full max-w-7xl mx-auto flex flex-col items-start text-left">
           <h1 className="text-[clamp(3rem,8vw,8rem)] font-bold text-white mb-6 tracking-tighter leading-[0.9] uppercase animate-hero-fade">
-            Visual Stories<br />That Feel Alive.
+            {renderMultilineTitle(siteSettings.hero_title)}
           </h1>
           
           <div className="animate-hero-fade delay-100">
             <p className="text-sm md:text-lg text-gray-200 font-light tracking-wide mb-2 uppercase">
-              {PORTFOLIO_DATA.roles.join(' · ')}
+              {siteSettings.hero_roles}
             </p>
             <p className="text-xs md:text-sm text-gray-400 tracking-[0.1em] uppercase">
-              Based in {PORTFOLIO_DATA.location} · Available worldwide
+              {siteSettings.hero_location_line}
             </p>
           </div>
           
@@ -760,13 +825,13 @@ export default function Portfolio() {
               onClick={() => scrollTo('contact')}
               className="w-full sm:w-auto px-10 py-4 bg-white text-black hover:bg-gray-200 transition-all duration-300 tracking-[0.15em] text-xs uppercase font-medium flex items-center justify-center gap-3"
             >
-              Let's Work Together <ArrowRight size={14} />
+              {siteSettings.hero_primary_cta} <ArrowRight size={14} />
             </button>
             <button 
               onClick={() => scrollTo('work')}
               className="text-xs tracking-[0.15em] uppercase text-white border-b border-white/30 pb-1 hover:border-white transition-all duration-300"
             >
-              View My Work
+              {siteSettings.hero_secondary_cta}
             </button>
           </div>
         </div>
@@ -966,7 +1031,7 @@ export default function Portfolio() {
               <div className="aspect-[3/4] w-full bg-zinc-900 relative">
                 {/* Replace with your actual portrait */}
                 <img 
-                  src="https://images.unsplash.com/photo-1552168324-d612d77725e3?q=80&w=2036&auto=format&fit=crop" 
+                  src={siteSettings.about_image_url || "https://images.unsplash.com/photo-1552168324-d612d77725e3?q=80&w=2036&auto=format&fit=crop"} 
                   alt="Yaël Noukimi"
                   className="w-full h-full object-cover grayscale opacity-80"
                   loading="lazy"
@@ -977,13 +1042,12 @@ export default function Portfolio() {
             
             <div className={`lg:col-span-7 space-y-6 transition-all duration-1000 delay-200 transform ${isVisibleAbout ? 'translate-x-0 opacity-100' : 'translate-x-10 opacity-0'}`}>
               <h2 className="text-3xl md:text-4xl font-light mb-8 leading-tight">
-                {PORTFOLIO_DATA.about.p1} {PORTFOLIO_DATA.about.p2}
+                {siteSettings.about_heading}
               </h2>
               <div className="text-gray-400 font-light leading-relaxed space-y-6 text-base md:text-lg">
-                <p>{PORTFOLIO_DATA.about.p3}</p>
-                <p>{PORTFOLIO_DATA.about.p4}</p>
-                <p>{PORTFOLIO_DATA.about.p5}</p>
-                <p>{PORTFOLIO_DATA.about.p6}</p>
+                {aboutParagraphs.map((paragraph, index) => (
+                  <p key={index}>{paragraph}</p>
+                ))}
               </div>
             </div>
           </div>
@@ -1026,14 +1090,14 @@ export default function Portfolio() {
         <div className="flex-grow flex items-center justify-center py-32 px-4 text-center">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter leading-[0.9] mb-12 uppercase">
-              Let's Create<br/>Something<br/>Memorable.
+              {renderMultilineTitle(siteSettings.contact_heading)}
             </h2>
             <p className="text-gray-400 text-lg md:text-xl font-light mb-12 max-w-xl mx-auto">
-              Available for freelance projects, collaborations and professional opportunities.
+              {siteSettings.contact_description}
             </p>
             
             <a 
-              href={`mailto:${PORTFOLIO_DATA.email}`}
+              href={`mailto:${siteSettings.contact_email}`}
               className="inline-block px-12 py-5 bg-white text-black rounded-full text-sm font-medium tracking-[0.1em] uppercase hover:scale-105 transition-transform duration-300"
             >
               Start a Project
@@ -1050,16 +1114,16 @@ export default function Portfolio() {
             </div>
             
             <div className="flex gap-6">
-              <a href={`mailto:${PORTFOLIO_DATA.email}`} className="text-gray-400 hover:text-white transition-colors p-2 border border-white/10 rounded-full hover:bg-white/5">
+              <a href={`mailto:${siteSettings.contact_email}`} className="text-gray-400 hover:text-white transition-colors p-2 border border-white/10 rounded-full hover:bg-white/5">
                 <Mail size={18} />
               </a>
-              <a href={PORTFOLIO_DATA.socials.instagram} target="_blank" rel="noreferrer" className="text-gray-400 hover:text-white transition-colors p-2 border border-white/10 rounded-full hover:bg-white/5">
+              <a href={siteSettings.instagram_url} target="_blank" rel="noreferrer" className="text-gray-400 hover:text-white transition-colors p-2 border border-white/10 rounded-full hover:bg-white/5">
                 <FaInstagram size={18} />
               </a>
-              <a href={PORTFOLIO_DATA.socials.linkedin} target="_blank" rel="noreferrer" className="text-gray-400 hover:text-white transition-colors p-2 border border-white/10 rounded-full hover:bg-white/5">
+              <a href={siteSettings.linkedin_url} target="_blank" rel="noreferrer" className="text-gray-400 hover:text-white transition-colors p-2 border border-white/10 rounded-full hover:bg-white/5">
                 <FaLinkedinIn size={18} />
               </a>
-               <a href={PORTFOLIO_DATA.socials.tiktok} target="_blank" rel="noreferrer" className="text-gray-400 hover:text-white transition-colors p-2 border border-white/10 rounded-full hover:bg-white/5 flex items-center justify-center w-[36px] h-[36px]">
+               <a href={siteSettings.tiktok_url} target="_blank" rel="noreferrer" className="text-gray-400 hover:text-white transition-colors p-2 border border-white/10 rounded-full hover:bg-white/5 flex items-center justify-center w-[36px] h-[36px]">
                 <FaTiktok size={16} />
               </a>
             </div>
