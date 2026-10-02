@@ -21,7 +21,7 @@ import {
 import MuxPlayer from '@mux/mux-player-react';
 import { supabase } from './lib/supabase';
 
-const ACCENT = '#ff4d2e';
+const ACCENT = '#e10600';
 
 const PORTFOLIO_DATA = {
   name: 'Yaël Noukimi',
@@ -292,7 +292,7 @@ function SectionLabel({ index, children, light = false }) {
       }`}
     >
       {index && <span>{index}</span>}
-      {index && <span className={`h-px w-8 ${light ? 'bg-black/20' : 'bg-white/20'}`} />}
+      {index && <span className={`h-px w-8 ${light ? 'bg-black/20' : 'bg-[var(--accent)]'}`} />}
       <span>{children}</span>
     </div>
   );
@@ -401,7 +401,7 @@ function ProjectCard({ project, index }) {
 
   return (
     <Reveal delay={Math.min(index * 70, 280)}>
-      <article ref={cardRef} className="group border-t border-white/10 pt-5 md:pt-7">
+      <article ref={cardRef} className="group border-t border-white/10 hover:border-[#e10600]/45 transition-colors duration-500 pt-5 md:pt-7">
         <a
           href={`#work/${project.slug}`}
           className="block"
@@ -432,7 +432,7 @@ function ProjectCard({ project, index }) {
             </span>
           </div>
 
-          <div className="relative overflow-hidden bg-[#111] aspect-[16/11] md:aspect-[16/8.7] rounded-[1.1rem] md:rounded-[1.8rem]">
+          <div className="signal-frame relative overflow-hidden bg-[#111] aspect-[16/11] md:aspect-[16/8.7] rounded-[1.1rem] md:rounded-[1.8rem]">
             <PreviewMedia project={project} active={active} />
 
             <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/5 pointer-events-none" />
@@ -464,7 +464,7 @@ function ProjectDetail({ project, projects }) {
 
   if (!project) {
     return (
-      <div className="min-h-screen bg-[#080808] text-white px-5 md:px-10 pt-36">
+      <div className="min-h-screen bg-[#050505] text-white px-5 md:px-10 pt-36">
         <button
           onClick={() => {
             window.location.hash = '';
@@ -487,7 +487,7 @@ function ProjectDetail({ project, projects }) {
   );
 
   return (
-    <div className="bg-[#080808] text-white min-h-screen pt-28 md:pt-36 pb-24">
+    <div className="bg-[#050505] text-white min-h-screen pt-28 md:pt-36 pb-24">
       <div className="px-5 md:px-10 lg:px-14 max-w-[1600px] mx-auto">
         <button
           onClick={() => {
@@ -517,7 +517,7 @@ function ProjectDetail({ project, projects }) {
       </div>
 
       <div className="px-0 md:px-5 lg:px-8 max-w-[1800px] mx-auto">
-        <div className="relative bg-black overflow-hidden md:rounded-[1.8rem] aspect-video md:aspect-[16/8.5]">
+        <div className="signal-frame relative bg-black overflow-hidden md:rounded-[1.8rem] aspect-video md:aspect-[16/8.5]">
           {project.video ? (
             <ProjectVideoPlayer
               url={project.video}
@@ -578,7 +578,7 @@ function ProjectDetail({ project, projects }) {
                     key={film.id || `${film.video_url}-${index}`}
                     className={index % 2 === 1 ? 'md:mt-20' : ''}
                   >
-                    <div className={`bg-black overflow-hidden rounded-[1.2rem] ${aspectClass}`}>
+                    <div className={`signal-frame bg-black overflow-hidden rounded-[1.2rem] ${aspectClass}`}>
                       <ProjectVideoPlayer
                         url={film.video_url}
                         poster={project.thumbnail}
@@ -846,12 +846,12 @@ export default function Portfolio() {
 
   return (
     <div
-      className="min-h-screen bg-[#080808] text-white font-sans antialiased overflow-x-hidden selection:bg-[var(--accent)] selection:text-white"
+      className="min-h-screen bg-[#050505] text-white font-sans antialiased overflow-x-hidden selection:bg-[var(--accent)] selection:text-white"
       style={{ '--accent': ACCENT }}
     >
       <style>{`
-        html { background: #080808; }
-        body { background: #080808; }
+        html { background: #050505; }
+        body { background: #050505; }
         @keyframes heroIn {
           from { opacity: 0; transform: translateY(28px); }
           to { opacity: 1; transform: translateY(0); }
@@ -877,6 +877,67 @@ export default function Portfolio() {
           mix-blend-mode: soft-light;
         }
         .pulse-dot { animation: pulseDot 1.8s ease-in-out infinite; }
+
+        .signal-frame {
+          position: relative;
+          border: 1px solid rgba(225, 6, 0, .28);
+          box-shadow:
+            0 0 0 1px rgba(255,255,255,.018) inset,
+            0 20px 70px rgba(0,0,0,.28);
+        }
+
+        .signal-frame::before {
+          content: '';
+          position: absolute;
+          z-index: 30;
+          left: 7%;
+          top: -1px;
+          width: 28%;
+          height: 2px;
+          background: var(--accent);
+          box-shadow: 0 0 18px rgba(225, 6, 0, .42);
+          pointer-events: none;
+        }
+
+        .signal-frame::after {
+          content: '';
+          position: absolute;
+          z-index: 30;
+          right: -1px;
+          top: 13%;
+          width: 2px;
+          height: 24%;
+          background: var(--accent);
+          box-shadow: 0 0 18px rgba(225, 6, 0, .36);
+          pointer-events: none;
+        }
+
+        .red-rule {
+          position: relative;
+        }
+
+        .red-rule::before {
+          content: '';
+          position: absolute;
+          left: 0;
+          top: 0;
+          height: 2px;
+          width: min(34vw, 420px);
+          background: var(--accent);
+          box-shadow: 0 0 16px rgba(225, 6, 0, .34);
+          pointer-events: none;
+        }
+
+        .red-rule-right::after {
+          content: '';
+          position: absolute;
+          right: 0;
+          bottom: 0;
+          height: 2px;
+          width: min(18vw, 240px);
+          background: var(--accent);
+          pointer-events: none;
+        }
         @media (prefers-reduced-motion: reduce) {
           .hero-in, .pulse-dot { animation: none !important; }
           * { scroll-behavior: auto !important; }
@@ -906,7 +967,7 @@ export default function Portfolio() {
               }}
               className="flex items-center gap-3 min-w-0"
             >
-              <span className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center text-[10px] font-bold tracking-[-0.03em]">
+              <span className="w-8 h-8 rounded-full bg-[var(--accent)] text-white flex items-center justify-center text-[10px] font-bold tracking-[-0.03em] shadow-[0_0_24px_rgba(225,6,0,.22)]">
                 {PORTFOLIO_DATA.shortName}
               </span>
               <span className="hidden sm:block text-[10px] md:text-xs uppercase tracking-[0.17em] text-white/85 truncate">
@@ -947,7 +1008,7 @@ export default function Portfolio() {
         </div>
 
         {mobileMenuOpen && (
-          <div className="fixed inset-0 z-[-1] bg-[#080808] md:hidden px-5 pt-28 pb-8 flex flex-col justify-between">
+          <div className="fixed inset-0 z-[-1] bg-[#050505] md:hidden px-5 pt-28 pb-8 flex flex-col justify-between">
             <div className="flex flex-col">
               {['work', 'about', 'services', 'contact'].map((item, index) => (
                 <button
@@ -1058,7 +1119,7 @@ export default function Portfolio() {
             </div>
           </section>
 
-          <section id="work" className="px-5 md:px-10 lg:px-14 py-24 md:py-36 bg-[#080808]">
+          <section id="work" className="px-5 md:px-10 lg:px-14 py-24 md:py-36 bg-[#050505]">
             <div className="max-w-[1600px] mx-auto">
               <Reveal className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end mb-16 md:mb-24">
                 <div className="lg:col-span-8">
@@ -1096,9 +1157,9 @@ export default function Portfolio() {
             </div>
           </section>
 
-          <section className="px-3 md:px-6 py-10 md:py-20 bg-[#080808]">
+          <section className="px-3 md:px-6 py-10 md:py-20 bg-[#050505]">
             <Reveal className="max-w-[1800px] mx-auto">
-              <div className="relative overflow-hidden rounded-[1.4rem] md:rounded-[2.3rem] bg-[#111] aspect-[4/5] sm:aspect-video md:aspect-[16/8]">
+              <div className="signal-frame relative overflow-hidden rounded-[1.4rem] md:rounded-[2.3rem] bg-[#111] aspect-[4/5] sm:aspect-video md:aspect-[16/8]">
                 {showreelPlaybackId && showreelPlaying ? (
                   <MuxPlayer
                     playbackId={showreelPlaybackId}
@@ -1142,7 +1203,7 @@ export default function Portfolio() {
             </Reveal>
           </section>
 
-          <section id="services" className="px-5 md:px-10 lg:px-14 py-24 md:py-36 bg-[#080808]">
+          <section id="services" className="px-5 md:px-10 lg:px-14 py-24 md:py-36 bg-[#050505]">
             <div className="max-w-[1600px] mx-auto">
               <Reveal className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-16 md:mb-24">
                 <div className="lg:col-span-7">
@@ -1156,7 +1217,7 @@ export default function Portfolio() {
                 </p>
               </Reveal>
 
-              <div className="border-t border-white/10">
+              <div className="red-rule border-t border-white/10 pt-1">
                 {SERVICES.map((service, index) => {
                   const Icon = service.icon;
                   return (
@@ -1182,12 +1243,12 @@ export default function Portfolio() {
             </div>
           </section>
 
-          <section id="about" className="bg-[#f1f0ec] text-black px-5 md:px-10 lg:px-14 py-24 md:py-36">
+          <section id="about" className="red-rule red-rule-right bg-[#090909] text-white px-5 md:px-10 lg:px-14 py-24 md:py-36">
             <div className="max-w-[1600px] mx-auto">
               <Reveal className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
                 <div className="lg:col-span-5">
-                  <SectionLabel index="03" light>About</SectionLabel>
-                  <div className="mt-8 aspect-[4/5] rounded-[1.3rem] overflow-hidden bg-black/10 sticky top-28">
+                  <SectionLabel index="03">About</SectionLabel>
+                  <div className="signal-frame mt-8 aspect-[4/5] rounded-[1.3rem] overflow-hidden bg-white/[0.03] sticky top-28">
                     <img
                       src={siteSettings.about_image_url || 'https://images.unsplash.com/photo-1552168324-d612d77725e3?q=85&w=1600&auto=format&fit=crop'}
                       alt="Yaël Noukimi"
@@ -1202,18 +1263,18 @@ export default function Portfolio() {
                     {siteSettings.about_heading}
                   </h2>
 
-                  <div className="mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 text-black/55 leading-relaxed text-sm md:text-base">
+                  <div className="mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 text-white/50 leading-relaxed text-sm md:text-base">
                     {aboutParagraphs.map((paragraph, index) => (
                       <p key={index}>{paragraph}</p>
                     ))}
                   </div>
 
-                  <div className="mt-16 md:mt-20 border-t border-black/15">
+                  <div className="mt-16 md:mt-20 border-t border-white/10">
                     {PROCESS.map(([number, title, description]) => (
-                      <div key={number} className="grid grid-cols-[38px_1fr] md:grid-cols-[60px_180px_1fr] gap-4 border-b border-black/15 py-5 items-start">
-                        <span className="text-[10px] uppercase tracking-[0.16em] text-black/35">{number}</span>
+                      <div key={number} className="grid grid-cols-[38px_1fr] md:grid-cols-[60px_180px_1fr] gap-4 border-b border-white/10 py-5 items-start">
+                        <span className="text-[10px] uppercase tracking-[0.16em] text-[var(--accent)]">{number}</span>
                         <h3 className="text-sm uppercase tracking-[0.08em]">{title}</h3>
-                        <p className="col-start-2 md:col-start-auto text-sm text-black/45 leading-relaxed">{description}</p>
+                        <p className="col-start-2 md:col-start-auto text-sm text-white/45 leading-relaxed">{description}</p>
                       </div>
                     ))}
                   </div>
@@ -1222,7 +1283,7 @@ export default function Portfolio() {
             </div>
           </section>
 
-          <section id="contact" className="bg-[var(--accent)] text-white px-5 md:px-10 lg:px-14 pt-24 md:pt-36 pb-8">
+          <section id="contact" className="red-rule red-rule-right bg-[#050505] text-white px-5 md:px-10 lg:px-14 pt-24 md:pt-36 pb-8">
             <div className="max-w-[1600px] mx-auto">
               <Reveal>
                 <SectionLabel index="04">Contact</SectionLabel>
@@ -1245,7 +1306,7 @@ export default function Portfolio() {
                           href={whatsappHref}
                           target="_blank"
                           rel="noreferrer"
-                          className="min-h-14 w-full rounded-full bg-white text-black px-5 flex items-center justify-between text-[10px] uppercase tracking-[0.16em] font-semibold hover:bg-black hover:text-white transition-colors"
+                          className="min-h-14 w-full rounded-full bg-[var(--accent)] text-white px-5 flex items-center justify-between text-[10px] uppercase tracking-[0.16em] font-semibold hover:bg-white hover:text-black transition-colors shadow-[0_10px_35px_rgba(225,6,0,.18)]"
                         >
                           <span className="flex items-center gap-3"><FaWhatsapp size={18} /> WhatsApp</span>
                           <ArrowUpRight size={15} />
@@ -1254,7 +1315,7 @@ export default function Portfolio() {
 
                       <a
                         href={`mailto:${siteSettings.contact_email}`}
-                        className="min-h-14 w-full rounded-full border border-white/35 px-5 flex items-center justify-between text-[10px] uppercase tracking-[0.16em] hover:bg-white hover:text-black transition-colors"
+                        className="min-h-14 w-full rounded-full border border-[#e10600]/60 px-5 flex items-center justify-between text-[10px] uppercase tracking-[0.16em] hover:bg-[var(--accent)] hover:text-white transition-colors"
                       >
                         <span className="flex items-center gap-3"><Mail size={17} /> Email</span>
                         <ArrowUpRight size={15} />
@@ -1263,7 +1324,7 @@ export default function Portfolio() {
                   </div>
                 </div>
 
-                <div className="mt-20 md:mt-28 border-t border-white/30 pt-7 grid grid-cols-1 md:grid-cols-3 gap-6 text-[10px] uppercase tracking-[0.16em] text-white/70">
+                <div className="mt-20 md:mt-28 border-t border-[#e10600]/35 pt-7 grid grid-cols-1 md:grid-cols-3 gap-6 text-[10px] uppercase tracking-[0.16em] text-white/70">
                   <div>
                     <p className="text-white/45 mb-2">Based</p>
                     <p>{siteSettings.hero_location_line}</p>
@@ -1280,7 +1341,7 @@ export default function Portfolio() {
                   </div>
                 </div>
 
-                <div className="mt-8 pt-6 border-t border-white/20 flex flex-col sm:flex-row justify-between gap-2 text-[9px] uppercase tracking-[0.15em] text-white/50">
+                <div className="mt-8 pt-6 border-t border-[#e10600]/25 flex flex-col sm:flex-row justify-between gap-2 text-[9px] uppercase tracking-[0.15em] text-white/50">
                   <p>© {new Date().getFullYear()} {PORTFOLIO_DATA.name}</p>
                   <p>Videomaker · Editor · Content Creator</p>
                 </div>
@@ -1291,7 +1352,7 @@ export default function Portfolio() {
       ) : (
         <main>
           <ProjectDetail project={selectedProject} projects={projects} />
-          <section id="contact" className="bg-[var(--accent)] text-white px-5 md:px-10 lg:px-14 py-20">
+          <section id="contact" className="red-rule red-rule-right bg-[#050505] text-white px-5 md:px-10 lg:px-14 py-20">
             <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row md:items-end justify-between gap-8">
               <div>
                 <p className="text-[10px] uppercase tracking-[0.18em] text-white/55 mb-4">Have a project?</p>
@@ -1299,11 +1360,11 @@ export default function Portfolio() {
               </div>
               <div className="flex flex-wrap gap-3">
                 {whatsappHref && (
-                  <a href={whatsappHref} target="_blank" rel="noreferrer" className="rounded-full bg-white text-black px-6 py-4 text-[10px] uppercase tracking-[0.16em] font-semibold flex items-center gap-3">
+                  <a href={whatsappHref} target="_blank" rel="noreferrer" className="rounded-full bg-[var(--accent)] text-white px-6 py-4 text-[10px] uppercase tracking-[0.16em] font-semibold flex items-center gap-3 hover:bg-white hover:text-black transition-colors">
                     <FaWhatsapp size={17} /> WhatsApp
                   </a>
                 )}
-                <a href={`mailto:${siteSettings.contact_email}`} className="rounded-full border border-white/35 px-6 py-4 text-[10px] uppercase tracking-[0.16em] flex items-center gap-3">
+                <a href={`mailto:${siteSettings.contact_email}`} className="rounded-full border border-[#e10600]/60 px-6 py-4 text-[10px] uppercase tracking-[0.16em] flex items-center gap-3 hover:bg-[var(--accent)] transition-colors">
                   <Mail size={16} /> Email
                 </a>
               </div>
