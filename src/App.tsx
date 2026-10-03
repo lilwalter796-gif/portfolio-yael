@@ -300,18 +300,45 @@ function SectionLabel({ index, children, light = false }) {
 
 function PreviewMedia({ project, active }) {
   const playbackId = muxPlaybackId(project.video);
+  const muxRef = useRef(null);
   const videoRef = useRef(null);
+  const [hasActivated, setHasActivated] = useState(false);
 
   useEffect(() => {
-    if (!videoRef.current || playbackId || !project.previewVideo) return;
+    if (active) setHasActivated(true);
+  }, [active]);
+
+  useEffect(() => {
+    const player = muxRef.current;
+
+    if (playbackId && player) {
+      if (active) {
+        try {
+          player.muted = true;
+        } catch {}
+
+        const playPromise = player.play?.();
+        if (playPromise?.catch) {
+          playPromise.catch(() => {});
+        }
+      } else {
+        player.pause?.();
+      }
+
+      return;
+    }
+
+    if (!videoRef.current || !project.previewVideo) return;
 
     if (active) {
+      videoRef.current.muted = true;
       videoRef.current.play().catch(() => {});
     } else {
       videoRef.current.pause();
-      videoRef.current.currentTime = 0;
     }
-  }, [active, playbackId, project.previewVideo]);
+  }, [active, playbackId, project.previewVideo, hasActivated]);
+
+  const hasVideo = Boolean(playbackId || project.previewVideo);
 
   return (
     <>
@@ -321,32 +348,36 @@ function PreviewMedia({ project, active }) {
         onError={(event) => {
           event.currentTarget.src = FALLBACK_PROJECT_IMAGE;
         }}
-        className={`absolute inset-0 w-full h-full object-cover transition duration-700 ${
-          active && (playbackId || project.previewVideo)
-            ? 'opacity-0 scale-[1.03]'
+        className={`absolute inset-0 w-full h-full object-cover transition-[opacity,transform] duration-500 ${
+          active && hasVideo
+            ? 'opacity-0 scale-[1.015]'
             : 'opacity-100 scale-100'
         }`}
         loading="lazy"
       />
 
-      {playbackId && active && (
+      {playbackId && hasActivated && (
         <MuxPlayer
+          ref={muxRef}
           playbackId={playbackId}
           streamType="on-demand"
-          autoPlay="muted"
+          autoPlay={active ? 'muted' : false}
           muted
           loop
           playsInline
-          preload="metadata"
+          preload={active ? 'auto' : 'metadata'}
           poster={project.thumbnail}
           videoTitle={`${project.title} preview`}
-          className="absolute inset-0 w-full h-full pointer-events-none"
+          className={`absolute inset-0 w-full h-full pointer-events-none transition-opacity duration-300 ${
+            active ? 'opacity-100' : 'opacity-0'
+          }`}
           style={{
             width: '100%',
             height: '100%',
             '--controls': 'none',
             '--media-object-fit': 'cover',
             '--media-object-position': 'center',
+            backgroundColor: '#080808',
           }}
         />
       )}
@@ -359,7 +390,8 @@ function PreviewMedia({ project, active }) {
           playsInline
           loop
           preload="metadata"
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 pointer-events-none ${
+          poster={project.thumbnail}
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 pointer-events-none ${
             active ? 'opacity-100' : 'opacity-0'
           }`}
         />
@@ -375,9 +407,13 @@ function ProjectCard({ project, index }) {
   const [mobileActive, setMobileActive] = useState(false);
 
   useEffect(() => {
-    const media = window.matchMedia('(hover: none)');
+    const media = window.matchMedia(
+      '(hover: none), (pointer: coarse), (max-width: 767px)',
+    );
+
     const sync = () => setTouch(media.matches);
     sync();
+
     media.addEventListener?.('change', sync);
     return () => media.removeEventListener?.('change', sync);
   }, []);
@@ -387,9 +423,16 @@ function ProjectCard({ project, index }) {
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        setMobileActive(entry.isIntersecting && entry.intersectionRatio >= 0.6);
+        // Sur téléphone il n'existe pas de vrai "hover".
+        // La preview démarre dès que la carte occupe une partie confortable de l'écran.
+        setMobileActive(
+          entry.isIntersecting && entry.intersectionRatio >= 0.28,
+        );
       },
-      { threshold: [0, 0.35, 0.6, 0.85, 1], rootMargin: '-7% 0px -7% 0px' },
+      {
+        threshold: [0, 0.15, 0.28, 0.45, 0.7],
+        rootMargin: '-10% 0px -18% 0px',
+      },
     );
 
     observer.observe(cardRef.current);
@@ -405,8 +448,12 @@ function ProjectCard({ project, index }) {
         <a
           href={`#work/${project.slug}`}
           className="block"
-          onMouseEnter={() => setHovered(true)}
-          onMouseLeave={() => setHovered(false)}
+          onPointerEnter={(event) => {
+            if (event.pointerType !== 'touch') setHovered(true);
+          }}
+          onPointerLeave={(event) => {
+            if (event.pointerType !== 'touch') setHovered(false);
+          }}
         >
           <div className="flex items-start justify-between gap-4 mb-4 md:mb-5">
             <div className="flex items-start gap-5 md:gap-8 min-w-0">
@@ -682,41 +729,83 @@ export default function Portfolio() {
       setProjectsLoading(true);
       setProjectsError('');
 
-      const { data, error } = await supabase
+      // Étape 1 : charger immédiatement les projets.
+      // On ne bloque plus toute la section en attendant la relation project_videos.
+      const { data: baseProjects, error: baseError } = await supabase
         .from('projects')
-        .select(`
-          *,
-          project_videos (
-            id,
-            project_id,
-            title,
-            video_url,
-            mux_asset_id,
-            video_type,
-            orientation,
-            is_featured,
-            sort_order,
-            created_at
-          )
-        `)
+        .select('*')
         .eq('published', true)
         .order('sort_order', { ascending: true })
         .order('created_at', { ascending: false });
 
       if (!active) return;
 
-      if (error) {
-        console.error('Unable to load portfolio projects:', error);
+      if (baseError) {
+        console.error('Unable to load portfolio projects:', baseError);
         setProjects([]);
-        setProjectsError(error.message);
-      } else {
-        setProjects((data ?? []).map(normalizeProject));
+        setProjectsError(baseError.message);
+        setProjectsLoading(false);
+        return;
       }
 
+      const rawProjects = baseProjects ?? [];
+
+      // Le champ historique video_url permet déjà d'afficher la preview
+      // pendant que les vidéos multiples sont chargées en arrière-plan.
+      setProjects(rawProjects.map(normalizeProject));
       setProjectsLoading(false);
+
+      if (rawProjects.length === 0) return;
+
+      // Étape 2 : enrichir ensuite les projets avec toutes leurs vidéos.
+      const projectIds = rawProjects.map((project) => project.id).filter(Boolean);
+
+      const { data: projectVideos, error: videosError } = await supabase
+        .from('project_videos')
+        .select(`
+          id,
+          project_id,
+          title,
+          video_url,
+          mux_asset_id,
+          video_type,
+          orientation,
+          is_featured,
+          sort_order,
+          created_at
+        `)
+        .in('project_id', projectIds)
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: true });
+
+      if (!active) return;
+
+      if (videosError) {
+        // On garde quand même les projets déjà visibles.
+        console.warn('Unable to enrich projects with videos:', videosError);
+        return;
+      }
+
+      const videosByProject = new Map();
+
+      for (const video of projectVideos ?? []) {
+        const current = videosByProject.get(video.project_id) ?? [];
+        current.push(video);
+        videosByProject.set(video.project_id, current);
+      }
+
+      setProjects(
+        rawProjects.map((project) =>
+          normalizeProject({
+            ...project,
+            project_videos: videosByProject.get(project.id) ?? [],
+          }),
+        ),
+      );
     }
 
     loadProjects();
+
     return () => {
       active = false;
     };
@@ -1105,6 +1194,31 @@ export default function Portfolio() {
           0% { box-shadow: 0 0 0 0 rgba(225,6,0,.30); }
           70%, 100% { box-shadow: 0 0 0 18px rgba(225,6,0,0); }
         }
+        @media (max-width: 767px) {
+          html, body {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: hidden;
+          }
+
+          .project-media {
+            min-height: 0;
+            transform: translateZ(0);
+          }
+
+          mux-player {
+            --controls: none;
+          }
+
+          .signal-frame::before {
+            animation-duration: 7s;
+          }
+
+          .grain::after {
+            opacity: .055;
+          }
+        }
+
         @media (hover: none) and (pointer: coarse) {
           .signal-frame:hover::before {
             animation-duration: 5.4s;
