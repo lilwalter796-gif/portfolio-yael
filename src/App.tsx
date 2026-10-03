@@ -568,7 +568,7 @@ function ProjectDetail({ project, projects }) {
               </p>
             </div>
 
-            <div className="film-strip -mx-5 px-5 flex gap-5 overflow-x-auto snap-x snap-mandatory pb-3 md:mx-0 md:px-0 md:grid md:grid-cols-2 md:gap-6 lg:gap-10 md:overflow-visible md:snap-none items-start">
+            <div className="film-strip -mx-5 px-5 flex gap-5 overflow-x-auto pb-3 md:mx-0 md:px-0 md:grid md:grid-cols-2 md:gap-6 lg:gap-10 md:overflow-visible md:snap-none items-start">
               {additionalVideos.map((film, index) => {
                 const orientation = film.orientation || 'horizontal';
                 const aspectClass =
@@ -673,7 +673,7 @@ export default function Portfolio() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [showreelPlaying, setShowreelPlaying] = useState(false);
-  const [scrollProgress, setScrollProgress] = useState(0);
+  const scrollProgressRef = useRef(null);
 
   useEffect(() => {
     let active = true;
@@ -784,20 +784,50 @@ export default function Portfolio() {
   }, []);
 
   useEffect(() => {
-    const onScroll = () => {
-      setIsScrolled(window.scrollY > 40);
+    let frame = null;
+    let lastScrolled = window.scrollY > 40;
 
-      const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-      setScrollProgress(Math.min(100, Math.max(0, (window.scrollY / maxScroll) * 100)));
+    setIsScrolled(lastScrolled);
+
+    const updateScrollUI = () => {
+      frame = null;
+
+      const nextScrolled = window.scrollY > 40;
+      if (nextScrolled !== lastScrolled) {
+        lastScrolled = nextScrolled;
+        setIsScrolled(nextScrolled);
+      }
+
+      const maxScroll = Math.max(
+        1,
+        document.documentElement.scrollHeight - window.innerHeight,
+      );
+      const progress = Math.min(
+        1,
+        Math.max(0, window.scrollY / maxScroll),
+      );
+
+      if (scrollProgressRef.current) {
+        scrollProgressRef.current.style.transform = `scaleX(${progress})`;
+      }
     };
 
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
+    const requestScrollUIUpdate = () => {
+      if (frame !== null) return;
+      frame = window.requestAnimationFrame(updateScrollUI);
+    };
+
+    requestScrollUIUpdate();
+    window.addEventListener('scroll', requestScrollUIUpdate, { passive: true });
+    window.addEventListener('resize', requestScrollUIUpdate, { passive: true });
 
     return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
+      window.removeEventListener('scroll', requestScrollUIUpdate);
+      window.removeEventListener('resize', requestScrollUIUpdate);
+
+      if (frame !== null) {
+        window.cancelAnimationFrame(frame);
+      }
     };
   }, []);
 
@@ -873,8 +903,15 @@ export default function Portfolio() {
       style={{ '--accent': ACCENT }}
     >
       <style>{`
-        html { background: #050505; }
-        body { background: #050505; }
+        html {
+          background: #050505;
+          scroll-behavior: auto;
+          overscroll-behavior-y: auto;
+        }
+        body {
+          background: #050505;
+          overscroll-behavior-y: auto;
+        }
         @keyframes heroIn {
           from { opacity: 0; transform: translateY(28px); }
           to { opacity: 1; transform: translateY(0); }
@@ -901,19 +938,14 @@ export default function Portfolio() {
         }
         .pulse-dot { animation: pulseDot 1.8s ease-in-out infinite; }
 
-        @property --signal-angle {
-          syntax: '<angle>';
-          inherits: false;
-          initial-value: 0deg;
-        }
-
         @keyframes signalOrbit {
-          to { --signal-angle: 360deg; }
+          from { offset-distance: 0%; }
+          to { offset-distance: 100%; }
         }
 
         .signal-frame {
           position: relative;
-          border: 1px solid rgba(225, 6, 0, .18);
+          border: 1px solid rgba(225, 6, 0, .20);
           box-shadow:
             0 0 0 1px rgba(255,255,255,.018) inset,
             0 18px 56px rgba(0,0,0,.24);
@@ -924,28 +956,26 @@ export default function Portfolio() {
           content: '';
           position: absolute;
           z-index: 30;
-          inset: -1px;
-          padding: 1.5px;
-          border-radius: inherit;
+          width: 58px;
+          height: 2px;
+          left: 0;
+          top: 0;
+          border-radius: 999px;
           pointer-events: none;
-          background:
-            conic-gradient(
-              from var(--signal-angle),
-              transparent 0deg 278deg,
-              rgba(225, 6, 0, .08) 292deg,
-              rgba(225, 6, 0, .72) 312deg,
-              var(--accent) 329deg,
-              rgba(255, 62, 56, .9) 339deg,
-              rgba(225, 6, 0, .16) 351deg,
-              transparent 360deg
-            );
-          -webkit-mask:
-            linear-gradient(#000 0 0) content-box,
-            linear-gradient(#000 0 0);
-          -webkit-mask-composite: xor;
-          mask-composite: exclude;
-          animation: signalOrbit 4.8s linear infinite;
-          filter: drop-shadow(0 0 7px rgba(225, 6, 0, .34));
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(225, 6, 0, .55),
+            #ff3b36,
+            var(--accent),
+            transparent
+          );
+          box-shadow: 0 0 12px rgba(225, 6, 0, .45);
+          offset-path: inset(2px round 18px);
+          offset-distance: 0%;
+          offset-rotate: auto;
+          animation: signalOrbit 5.4s linear infinite;
+          will-change: offset-distance;
         }
 
         .signal-frame::after {
@@ -959,7 +989,17 @@ export default function Portfolio() {
         }
 
         .signal-frame:hover::before {
-          animation-duration: 2.7s;
+          animation-duration: 3.2s;
+        }
+
+        @supports not (offset-path: inset(2px round 18px)) {
+          .signal-frame::before {
+            width: 28%;
+            left: 7%;
+            top: -1px;
+            offset-path: none;
+            animation: none;
+          }
         }
 
         .red-rule {
@@ -1043,13 +1083,16 @@ export default function Portfolio() {
         @media (prefers-reduced-motion: reduce) {
           .signal-frame::before {
             animation: none;
-            --signal-angle: 325deg;
           }
         }
 
         .film-strip {
           scrollbar-width: none;
           -ms-overflow-style: none;
+          scroll-snap-type: x proximity;
+          overscroll-behavior-inline: contain;
+          -webkit-overflow-scrolling: touch;
+          touch-action: pan-x pan-y pinch-zoom;
         }
         .film-strip::-webkit-scrollbar {
           display: none;
@@ -1062,6 +1105,15 @@ export default function Portfolio() {
           0% { box-shadow: 0 0 0 0 rgba(225,6,0,.30); }
           70%, 100% { box-shadow: 0 0 0 18px rgba(225,6,0,0); }
         }
+        @media (hover: none) and (pointer: coarse) {
+          .signal-frame:hover::before {
+            animation-duration: 5.4s;
+          }
+          .project-media {
+            transform: none !important;
+          }
+        }
+
         @media (prefers-reduced-motion: reduce) {
           .hero-in, .pulse-dot, .play-ring { animation: none !important; }
           .project-media { transform: none !important; }
@@ -1070,9 +1122,9 @@ export default function Portfolio() {
       `}</style>
 
       <div
+        ref={scrollProgressRef}
         aria-hidden="true"
-        className="fixed left-0 top-0 z-[80] h-[2px] bg-[var(--accent)] shadow-[0_0_14px_rgba(225,6,0,.55)] transition-[width] duration-150"
-        style={{ width: `${scrollProgress}%` }}
+        className="fixed left-0 right-0 top-0 z-[80] h-[2px] origin-left scale-x-0 bg-[var(--accent)] shadow-[0_0_14px_rgba(225,6,0,.55)] will-change-transform pointer-events-none"
       />
 
       <nav
