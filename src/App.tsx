@@ -408,13 +408,13 @@ function ProjectCard({ project, index }) {
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
         >
-          <div className="flex items-start justify-between gap-4 mb-5 md:mb-7">
+          <div className="flex items-start justify-between gap-4 mb-4 md:mb-5">
             <div className="flex items-start gap-5 md:gap-8 min-w-0">
               <span className="text-[10px] md:text-xs text-white/35 tracking-[0.18em] pt-1">
                 {String(index + 1).padStart(2, '0')}
               </span>
               <div className="min-w-0">
-                <h3 className="text-[clamp(1.6rem,4vw,4.7rem)] leading-[0.94] tracking-[-0.045em] uppercase font-semibold truncate md:whitespace-normal">
+                <h3 className="text-[clamp(1.45rem,3vw,3.25rem)] leading-[0.96] tracking-[-0.045em] uppercase font-semibold truncate md:whitespace-normal">
                   {project.title}
                 </h3>
                 <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] md:text-xs uppercase tracking-[0.15em] text-white/45">
@@ -427,12 +427,12 @@ function ProjectCard({ project, index }) {
               </div>
             </div>
 
-            <span className="shrink-0 w-11 h-11 md:w-14 md:h-14 rounded-full border border-white/15 flex items-center justify-center group-hover:bg-[var(--accent)] group-hover:border-[var(--accent)] group-hover:text-white group-hover:rotate-45 transition-all duration-500">
+            <span className="shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-full border border-white/15 flex items-center justify-center group-hover:bg-[var(--accent)] group-hover:border-[var(--accent)] group-hover:text-white group-hover:rotate-45 transition-all duration-500">
               <ArrowUpRight size={18} />
             </span>
           </div>
 
-          <div className="project-media signal-frame relative overflow-hidden bg-[#111] aspect-[16/11] md:aspect-[16/8.7] rounded-[1.1rem] md:rounded-[1.8rem]">
+          <div className="project-media signal-frame relative overflow-hidden bg-[#111] aspect-video md:aspect-[16/7.6] md:max-h-[620px] rounded-[1.1rem] md:rounded-[1.8rem]">
             <PreviewMedia project={project} active={active} />
 
             <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/5 pointer-events-none" />
@@ -442,7 +442,7 @@ function ProjectCard({ project, index }) {
               <span>{active ? 'Preview playing' : `Film ${String(index + 1).padStart(2, '0')}`}</span>
             </div>
 
-            <div className="absolute left-4 right-4 bottom-4 md:left-7 md:right-7 md:bottom-6 flex items-end justify-between gap-4 pointer-events-none">
+            <div className="absolute left-4 right-4 bottom-4 md:left-6 md:right-6 md:bottom-5 flex items-end justify-between gap-4 pointer-events-none">
               <div className="max-w-[70%]">
                 {project.roles.length > 0 && (
                   <p className="text-[9px] md:text-[10px] uppercase tracking-[0.16em] text-white/70 line-clamp-2">
@@ -508,7 +508,7 @@ function ProjectDetail({ project, projects }) {
             <p className="text-[10px] md:text-xs uppercase tracking-[0.18em] text-white/40 mb-5">
               {[project.category, project.year, project.location].filter(Boolean).join(' · ')}
             </p>
-            <h1 className="text-[clamp(3.3rem,10vw,10rem)] leading-[0.8] tracking-[-0.065em] font-semibold uppercase break-words">
+            <h1 className="text-[clamp(2.8rem,7.4vw,7rem)] leading-[0.84] tracking-[-0.065em] font-semibold uppercase break-words">
               {project.title}
             </h1>
           </div>
@@ -521,8 +521,8 @@ function ProjectDetail({ project, projects }) {
         </div>
       </div>
 
-      <div className="px-0 md:px-5 lg:px-8 max-w-[1800px] mx-auto">
-        <div className="signal-frame relative bg-black overflow-hidden md:rounded-[1.8rem] aspect-video md:aspect-[16/8.5]">
+      <div className="px-3 md:px-8 lg:px-12 max-w-[1500px] mx-auto">
+        <div className="signal-frame relative bg-black overflow-hidden md:rounded-[1.5rem] aspect-video md:aspect-[16/7.8] md:max-h-[760px]">
           {project.video ? (
             <ProjectVideoPlayer
               url={project.video}
@@ -543,23 +543,23 @@ function ProjectDetail({ project, projects }) {
       </div>
 
       <div className="px-5 md:px-10 lg:px-14 max-w-[1600px] mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 py-24 md:py-32 border-b border-white/10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 py-16 md:py-22 border-b border-white/10">
           <div className="lg:col-span-3">
             <SectionLabel index="01">Project</SectionLabel>
           </div>
           <div className="lg:col-span-8 lg:col-start-5">
-            <p className="text-2xl md:text-4xl lg:text-5xl leading-[1.08] tracking-[-0.035em] text-white/90">
+            <p className="text-xl md:text-3xl lg:text-4xl leading-[1.14] tracking-[-0.035em] text-white/90">
               {project.description || 'Project details coming soon.'}
             </p>
           </div>
         </div>
 
         {additionalVideos.length > 0 && (
-          <section className="red-divider py-24 md:py-32 border-b border-white/10">
+          <section className="red-divider py-16 md:py-22 border-b border-white/10">
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12 md:mb-16">
               <div>
                 <SectionLabel index="02">Selected films</SectionLabel>
-                <h2 className="mt-5 text-4xl md:text-6xl lg:text-7xl tracking-[-0.055em] uppercase font-semibold leading-[0.9]">
+                <h2 className="mt-5 text-3xl md:text-5xl lg:text-6xl tracking-[-0.05em] uppercase font-semibold leading-[0.9]">
                   More from<br />this project.
                 </h2>
               </div>
@@ -573,7 +573,7 @@ function ProjectDetail({ project, projects }) {
                 const orientation = film.orientation || 'horizontal';
                 const aspectClass =
                   orientation === 'vertical'
-                    ? 'aspect-[9/16] md:max-w-[460px]'
+                    ? 'aspect-[9/16] md:max-w-[320px]'
                     : orientation === 'square'
                       ? 'aspect-square'
                       : 'aspect-video';
@@ -583,11 +583,11 @@ function ProjectDetail({ project, projects }) {
                     key={film.id || `${film.video_url}-${index}`}
                     className={`shrink-0 snap-center ${
                       orientation === 'vertical'
-                        ? 'w-[72vw] max-w-[360px] md:w-auto'
+                        ? 'w-[64vw] max-w-[300px] md:w-auto'
                         : orientation === 'square'
-                          ? 'w-[78vw] max-w-[440px] md:w-auto'
-                          : 'w-[88vw] max-w-[720px] md:w-auto'
-                    } ${index % 2 === 1 ? 'md:mt-20' : ''}`}
+                          ? 'w-[70vw] max-w-[360px] md:w-auto'
+                          : 'w-[82vw] max-w-[620px] md:w-auto'
+                    } ${index % 2 === 1 ? 'md:mt-10' : ''}`}
                   >
                     <div className={`signal-frame bg-black overflow-hidden rounded-[1.2rem] ${aspectClass}`}>
                       <ProjectVideoPlayer
@@ -619,7 +619,7 @@ function ProjectDetail({ project, projects }) {
         )}
 
         {project.gallery.length > 0 && (
-          <section className="red-divider py-24 md:py-32 border-b border-white/10">
+          <section className="red-divider py-16 md:py-22 border-b border-white/10">
             <SectionLabel index={additionalVideos.length > 0 ? '03' : '02'}>Frames</SectionLabel>
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mt-10">
               {project.gallery.map((image, index) => (
@@ -901,38 +901,65 @@ export default function Portfolio() {
         }
         .pulse-dot { animation: pulseDot 1.8s ease-in-out infinite; }
 
+        @property --signal-angle {
+          syntax: '<angle>';
+          inherits: false;
+          initial-value: 0deg;
+        }
+
+        @keyframes signalOrbit {
+          to { --signal-angle: 360deg; }
+        }
+
         .signal-frame {
           position: relative;
-          border: 1px solid rgba(225, 6, 0, .28);
+          border: 1px solid rgba(225, 6, 0, .18);
           box-shadow:
             0 0 0 1px rgba(255,255,255,.018) inset,
-            0 20px 70px rgba(0,0,0,.28);
+            0 18px 56px rgba(0,0,0,.24);
+          isolation: isolate;
         }
 
         .signal-frame::before {
           content: '';
           position: absolute;
           z-index: 30;
-          left: 7%;
-          top: -1px;
-          width: 28%;
-          height: 2px;
-          background: var(--accent);
-          box-shadow: 0 0 18px rgba(225, 6, 0, .42);
+          inset: -1px;
+          padding: 1.5px;
+          border-radius: inherit;
           pointer-events: none;
+          background:
+            conic-gradient(
+              from var(--signal-angle),
+              transparent 0deg 278deg,
+              rgba(225, 6, 0, .08) 292deg,
+              rgba(225, 6, 0, .72) 312deg,
+              var(--accent) 329deg,
+              rgba(255, 62, 56, .9) 339deg,
+              rgba(225, 6, 0, .16) 351deg,
+              transparent 360deg
+            );
+          -webkit-mask:
+            linear-gradient(#000 0 0) content-box,
+            linear-gradient(#000 0 0);
+          -webkit-mask-composite: xor;
+          mask-composite: exclude;
+          animation: signalOrbit 4.8s linear infinite;
+          filter: drop-shadow(0 0 7px rgba(225, 6, 0, .34));
         }
 
         .signal-frame::after {
           content: '';
           position: absolute;
-          z-index: 30;
-          right: -1px;
-          top: 13%;
-          width: 2px;
-          height: 24%;
-          background: var(--accent);
-          box-shadow: 0 0 18px rgba(225, 6, 0, .36);
+          z-index: 29;
+          inset: 0;
+          border-radius: inherit;
           pointer-events: none;
+          box-shadow: inset 0 0 0 1px rgba(225, 6, 0, .05);
+        }
+
+        .signal-frame:hover::before {
+          animation-duration: 2.7s;
         }
 
         .red-rule {
@@ -1012,6 +1039,14 @@ export default function Portfolio() {
           border-right: 1px solid;
           border-bottom: 1px solid;
         }
+
+        @media (prefers-reduced-motion: reduce) {
+          .signal-frame::before {
+            animation: none;
+            --signal-angle: 325deg;
+          }
+        }
+
         .film-strip {
           scrollbar-width: none;
           -ms-overflow-style: none;
@@ -1179,7 +1214,7 @@ export default function Portfolio() {
             </div>
 
             <div className="relative z-10 w-full max-w-[1600px] mx-auto px-5 md:px-10 lg:px-14 pb-8 md:pb-10 pt-36">
-              <div className="flex flex-wrap items-center justify-between gap-4 mb-8 md:mb-12 hero-in hero-delay-1">
+              <div className="flex flex-wrap items-center justify-between gap-4 mb-6 md:mb-8 hero-in hero-delay-1">
                 <div className="flex items-center gap-3 text-[9px] md:text-[10px] uppercase tracking-[0.18em] text-white/65">
                   <span className="w-2 h-2 rounded-full bg-[var(--accent)] pulse-dot" />
                   <span>Available for selected projects</span>
@@ -1189,11 +1224,11 @@ export default function Portfolio() {
                 </span>
               </div>
 
-              <h1 className="hero-in text-[clamp(4.2rem,12vw,12.5rem)] leading-[0.73] tracking-[-0.075em] font-semibold uppercase max-w-[1450px]">
+              <h1 className="hero-in text-[clamp(3.35rem,8.6vw,8.7rem)] leading-[0.79] tracking-[-0.075em] font-semibold uppercase max-w-[1450px]">
                 {renderMultilineTitle(siteSettings.hero_title)}
               </h1>
 
-              <div className="hero-in hero-delay-2 mt-7 md:mt-10 grid grid-cols-1 md:grid-cols-12 gap-7 md:items-end">
+              <div className="hero-in hero-delay-2 mt-5 md:mt-7 grid grid-cols-1 md:grid-cols-12 gap-7 md:items-end">
                 <p className="md:col-span-5 lg:col-span-4 text-xs md:text-sm uppercase tracking-[0.16em] text-white/65 leading-relaxed">
                   {siteSettings.hero_roles}
                 </p>
@@ -1201,14 +1236,14 @@ export default function Portfolio() {
                 <div className="md:col-span-7 lg:col-span-5 lg:col-start-8 flex flex-col sm:flex-row gap-3 md:justify-end">
                   <button
                     onClick={handlePrimaryCta}
-                    className="cta-red min-h-14 px-6 rounded-full flex items-center justify-between gap-6 text-[10px] uppercase tracking-[0.16em] font-semibold transition-all duration-300"
+                    className="cta-red min-h-12 px-5 rounded-full flex items-center justify-between gap-6 text-[10px] uppercase tracking-[0.16em] font-semibold transition-all duration-300"
                   >
                     <span>{siteSettings.hero_primary_cta}</span>
                     <ArrowUpRight size={16} />
                   </button>
                   <button
                     onClick={() => scrollToSection('work')}
-                    className="min-h-14 px-6 rounded-full border border-[#e10600]/55 bg-black/30 backdrop-blur-md flex items-center justify-between gap-6 text-[10px] uppercase tracking-[0.16em] hover:border-[#e10600] hover:bg-[#e10600]/10 transition-all duration-300"
+                    className="min-h-12 px-5 rounded-full border border-[#e10600]/55 bg-black/30 backdrop-blur-md flex items-center justify-between gap-6 text-[10px] uppercase tracking-[0.16em] hover:border-[#e10600] hover:bg-[#e10600]/10 transition-all duration-300"
                   >
                     <span>{siteSettings.hero_secondary_cta}</span>
                     <ArrowRight size={16} />
@@ -1216,7 +1251,7 @@ export default function Portfolio() {
                 </div>
               </div>
 
-              <div className="red-divider hero-in hero-delay-3 mt-10 md:mt-12 border-t border-white/15 pt-5 flex items-center justify-between text-[9px] md:text-[10px] uppercase tracking-[0.18em] text-white/35">
+              <div className="red-divider hero-in hero-delay-3 mt-7 md:mt-9 border-t border-white/15 pt-5 flex items-center justify-between text-[9px] md:text-[10px] uppercase tracking-[0.18em] text-white/35">
                 <span>Videomaker / Editor / Content Creator</span>
                 <button onClick={() => scrollToSection('work')} className="flex items-center gap-2 hover:text-white transition-colors">
                   Scroll to work <span>↓</span>
@@ -1225,12 +1260,12 @@ export default function Portfolio() {
             </div>
           </section>
 
-          <section id="work" className="red-rule px-5 md:px-10 lg:px-14 py-24 md:py-36 bg-[#050505]">
+          <section id="work" className="red-rule px-5 md:px-10 lg:px-14 py-18 md:py-24 bg-[#050505]">
             <div className="max-w-[1600px] mx-auto">
-              <Reveal className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end mb-16 md:mb-24">
+              <Reveal className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end mb-10 md:mb-14">
                 <div className="lg:col-span-8">
                   <SectionLabel index="01">Selected work</SectionLabel>
-                  <h2 className="mt-5 text-[clamp(3rem,8vw,8rem)] leading-[0.8] tracking-[-0.065em] font-semibold uppercase">
+                  <h2 className="mt-5 text-[clamp(2.5rem,5.8vw,5.7rem)] leading-[0.86] tracking-[-0.065em] font-semibold uppercase">
                     Films first.<br />Everything else second.
                   </h2>
                 </div>
@@ -1254,7 +1289,7 @@ export default function Portfolio() {
                   Selected work coming soon.
                 </div>
               ) : (
-                <div className="space-y-20 md:space-y-28">
+                <div className="space-y-12 md:space-y-18">
                   {projects.map((project, index) => (
                     <ProjectCard key={project.id} project={project} index={index} />
                   ))}
@@ -1265,7 +1300,7 @@ export default function Portfolio() {
 
           <section className="px-3 md:px-6 py-10 md:py-20 bg-[#050505]">
             <Reveal className="max-w-[1800px] mx-auto">
-              <div className="signal-frame relative overflow-hidden rounded-[1.4rem] md:rounded-[2.3rem] bg-[#111] aspect-[4/5] sm:aspect-video md:aspect-[16/8]">
+              <div className="signal-frame relative overflow-hidden rounded-[1.4rem] md:rounded-[2.3rem] bg-[#111] aspect-[16/10] sm:aspect-video md:aspect-[16/7.5] md:max-h-[720px]">
                 {showreelPlaybackId && showreelPlaying ? (
                   <MuxPlayer
                     playbackId={showreelPlaybackId}
@@ -1294,12 +1329,12 @@ export default function Portfolio() {
                     <div className="absolute inset-x-5 md:inset-x-10 bottom-6 md:bottom-9 flex items-end justify-between gap-4 text-left">
                       <div>
                         <p className="text-[9px] md:text-[10px] uppercase tracking-[0.18em] text-white/50 mb-3">Showreel</p>
-                        <h2 className="text-4xl sm:text-6xl md:text-8xl lg:text-9xl uppercase leading-[0.78] tracking-[-0.065em] font-semibold">
+                        <h2 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl uppercase leading-[0.82] tracking-[-0.065em] font-semibold">
                           60 seconds<br />of motion.
                         </h2>
                       </div>
 
-                      <span className="play-ring shrink-0 w-16 h-16 md:w-24 md:h-24 rounded-full bg-[var(--accent)] text-white flex items-center justify-center group-hover:bg-white group-hover:text-black group-hover:scale-105 transition-all duration-500">
+                      <span className="play-ring shrink-0 w-14 h-14 md:w-20 md:h-20 rounded-full bg-[var(--accent)] text-white flex items-center justify-center group-hover:bg-white group-hover:text-black group-hover:scale-105 transition-all duration-500">
                         <Play size={28} fill="currentColor" className="ml-1" />
                       </span>
                     </div>
@@ -1309,12 +1344,12 @@ export default function Portfolio() {
             </Reveal>
           </section>
 
-          <section id="services" className="px-5 md:px-10 lg:px-14 py-24 md:py-36 bg-[#050505]">
+          <section id="services" className="px-5 md:px-10 lg:px-14 py-18 md:py-24 bg-[#050505]">
             <div className="max-w-[1600px] mx-auto">
               <Reveal className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-16 md:mb-24">
                 <div className="lg:col-span-7">
                   <SectionLabel index="02">What I do</SectionLabel>
-                  <h2 className="mt-5 text-5xl md:text-7xl lg:text-8xl uppercase tracking-[-0.06em] leading-[0.84] font-semibold">
+                  <h2 className="mt-5 text-4xl md:text-6xl lg:text-6xl uppercase tracking-[-0.06em] leading-[0.84] font-semibold">
                     Built around<br />the moving image.
                   </h2>
                 </div>
@@ -1328,13 +1363,13 @@ export default function Portfolio() {
                   const Icon = service.icon;
                   return (
                     <Reveal key={service.number} delay={index * 80}>
-                      <div className="group grid grid-cols-[44px_1fr] md:grid-cols-12 gap-5 md:gap-8 border-b border-white/10 py-7 md:py-10 items-start">
+                      <div className="group grid grid-cols-[44px_1fr] md:grid-cols-12 gap-5 md:gap-8 border-b border-white/10 py-5 md:py-7 items-start">
                         <span className="md:col-span-1 text-[10px] uppercase tracking-[0.18em] text-white/30 pt-1">
                           {service.number}
                         </span>
                         <div className="md:col-span-4 flex items-center gap-4">
                           <Icon size={19} className="text-white/35 group-hover:text-[var(--accent)] transition-colors" />
-                          <h3 className="text-xl md:text-3xl uppercase tracking-[-0.025em]">
+                          <h3 className="text-lg md:text-2xl uppercase tracking-[-0.025em]">
                             {service.title}
                           </h3>
                         </div>
@@ -1349,12 +1384,12 @@ export default function Portfolio() {
             </div>
           </section>
 
-          <section id="about" className="red-rule red-rule-right bg-[#090909] text-white px-5 md:px-10 lg:px-14 py-24 md:py-36">
+          <section id="about" className="red-rule red-rule-right bg-[#090909] text-white px-5 md:px-10 lg:px-14 py-18 md:py-24">
             <div className="max-w-[1600px] mx-auto">
               <Reveal className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
                 <div className="lg:col-span-5">
                   <SectionLabel index="03">About</SectionLabel>
-                  <div className="signal-frame mt-8 aspect-[4/5] rounded-[1.3rem] overflow-hidden bg-white/[0.03] sticky top-28">
+                  <div className="signal-frame mt-7 aspect-[4/5] max-w-[430px] rounded-[1.15rem] overflow-hidden bg-white/[0.03] sticky top-28">
                     <img
                       src={siteSettings.about_image_url || 'https://images.unsplash.com/photo-1552168324-d612d77725e3?q=85&w=1600&auto=format&fit=crop'}
                       alt="Yaël Noukimi"
@@ -1365,17 +1400,17 @@ export default function Portfolio() {
                 </div>
 
                 <div className="lg:col-span-6 lg:col-start-7 lg:pt-20">
-                  <h2 className="text-[clamp(2.4rem,5.7vw,6rem)] leading-[0.95] tracking-[-0.055em] font-medium">
+                  <h2 className="text-[clamp(2rem,4.4vw,4.3rem)] leading-[1.0] tracking-[-0.055em] font-medium">
                     {siteSettings.about_heading}
                   </h2>
 
-                  <div className="mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 text-white/50 leading-relaxed text-sm md:text-base">
+                  <div className="mt-9 md:mt-12 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 text-white/50 leading-relaxed text-sm md:text-base">
                     {aboutParagraphs.map((paragraph, index) => (
                       <p key={index}>{paragraph}</p>
                     ))}
                   </div>
 
-                  <div className="mt-16 md:mt-20 border-t border-white/10">
+                  <div className="mt-16 md:mt-10 border-t border-white/10">
                     {PROCESS.map(([number, title, description]) => (
                       <div key={number} className="grid grid-cols-[38px_1fr] md:grid-cols-[60px_180px_1fr] gap-4 border-b border-white/10 py-5 items-start">
                         <span className="text-[10px] uppercase tracking-[0.16em] text-[var(--accent)]">{number}</span>
@@ -1389,14 +1424,14 @@ export default function Portfolio() {
             </div>
           </section>
 
-          <section id="contact" className="red-rule red-rule-right bg-[#050505] text-white px-5 md:px-10 lg:px-14 pt-24 md:pt-36 pb-8">
+          <section id="contact" className="red-rule red-rule-right bg-[#050505] text-white px-5 md:px-10 lg:px-14 pt-18 md:pt-24 pb-8">
             <div className="max-w-[1600px] mx-auto">
               <Reveal>
                 <SectionLabel index="04">Contact</SectionLabel>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mt-8 md:mt-12 items-end">
                   <div className="lg:col-span-9">
-                    <h2 className="text-[clamp(4rem,11vw,11rem)] leading-[0.73] tracking-[-0.075em] uppercase font-semibold">
+                    <h2 className="text-[clamp(3rem,7.8vw,7.5rem)] leading-[0.8] tracking-[-0.075em] uppercase font-semibold">
                       {renderMultilineTitle(siteSettings.contact_heading)}
                     </h2>
                   </div>
@@ -1430,7 +1465,7 @@ export default function Portfolio() {
                   </div>
                 </div>
 
-                <div className="mt-20 md:mt-28 border-t border-[#e10600]/35 pt-7 grid grid-cols-1 md:grid-cols-3 gap-6 text-[10px] uppercase tracking-[0.16em] text-white/70">
+                <div className="mt-14 md:mt-20 border-t border-[#e10600]/35 pt-7 grid grid-cols-1 md:grid-cols-3 gap-6 text-[10px] uppercase tracking-[0.16em] text-white/70">
                   <div>
                     <p className="text-white/45 mb-2">Based</p>
                     <p>{siteSettings.hero_location_line}</p>
