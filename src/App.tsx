@@ -102,6 +102,25 @@ const PROCESS = [
   ['05', 'Deliver', 'Clean exports ready for social, web, screens or campaigns.'],
 ];
 
+const PROJECTS_CACHE_KEY = 'yn-portfolio-projects-v2';
+
+function readCachedProjects() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(PROJECTS_CACHE_KEY) || '[]');
+    return Array.isArray(cached) ? cached : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeCachedProjects(projects) {
+  try {
+    localStorage.setItem(PROJECTS_CACHE_KEY, JSON.stringify(projects));
+  } catch {
+    // Safari private mode / storage limitations: ignore and keep the network data.
+  }
+}
+
 function normalizeProject(project) {
   const databaseVideos = Array.isArray(project.project_videos)
     ? [...project.project_videos].sort(
@@ -746,8 +765,10 @@ function ProjectDetail({ project, projects }) {
 }
 
 export default function Portfolio() {
-  const [projects, setProjects] = useState([]);
-  const [projectsLoading, setProjectsLoading] = useState(true);
+  const [projects, setProjects] = useState(() => readCachedProjects());
+  const [projectsLoading, setProjectsLoading] = useState(
+    () => readCachedProjects().length === 0,
+  );
   const [projectsError, setProjectsError] = useState('');
   const [siteSettings, setSiteSettings] = useState(DEFAULT_SETTINGS);
   const [route, setRoute] = useState({ path: 'home', slug: null });
@@ -758,106 +779,181 @@ export default function Portfolio() {
 
   useEffect(() => {
     let active = true;
+    let requestInFlight = false;
+    let lastRefreshAt = 0;
 
-    async function loadProjects() {
-      setProjectsLoading(true);
-      setProjectsError('');
+    async function loadProjects({ background = false } = {}) {
+      if (requestInFlight) return;
+      requestInFlight = true;
 
-      // Étape 1 : charger immédiatement les projets.
-      // On ne bloque plus toute la section en attendant la relation project_videos.
-      const { data: baseProjects, error: baseError } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('published', true)
-        .order('sort_order', { ascending: true })
-        .order('created_at', { ascending: false });
-
-      if (!active) return;
-
-      if (baseError) {
-        console.error('Unable to load portfolio projects:', baseError?.message || baseError);
-        setProjects([]);
-        setProjectsError(baseError.message);
-        setProjectsLoading(false);
-        return;
+      if (!background) {
+        setProjectsLoading(true);
+        setProjectsError('');
       }
 
-      const rawProjects = baseProjects ?? [];
+      try {
+        const baseQuery = supabase
+          .from('projects')
+          .select('*')
+          .eq('published', true)
+          .order('sort_order', { ascending: true })
+          .order('created_at', { ascending: false });
 
-      // Le champ historique video_url permet déjà d'afficher la preview
-      // pendant que les vidéos multiples sont chargées en arrière-plan.
-      setProjects(rawProjects.map(normalizeProject));
-      setProjectsLoading(false);
+        // Empêche Safari mobile de rester éternellement sur "Loading…"
+        // si une requête réseau se bloque.
+        const baseResult = await Promise.race([
+          baseQuery,
+          new Promise((resolve) =>
+            window.setTimeout(
+              () =>
+                resolve({
+                  data: null,
+                  error: { message: 'Project request timed out' },
+                }),
+              12000,
+            ),
+          ),
+        ]);
 
-      if (rawProjects.length === 0) return;
+        if (!active) return;
 
-      // Étape 2 : enrichir ensuite les projets avec toutes leurs vidéos.
-      const projectIds = rawProjects.map((project) => project.id).filter(Boolean);
+        const { data: baseProjects, error: baseError } = baseResult;
 
-      const { data: projectVideos, error: videosError } = await supabase
-        .from('project_videos')
-        .select(`
-          id,
-          project_id,
-          title,
-          video_url,
-          mux_asset_id,
-          video_type,
-          orientation,
-          is_featured,
-          sort_order,
-          created_at
-        `)
-        .in('project_id', projectIds)
-        .order('sort_order', { ascending: true })
-        .order('created_at', { ascending: true });
+        if (baseError) {
+          console.error(
+            'Unable to load portfolio projects:',
+            baseError?.message || baseError,
+          );
 
-      if (!active) return;
+          // Une actualisation en arrière-plan ne doit jamais masquer
+          // les projets qui sont déjà affichés.
+          if (!background) {
+            setProjectsError(baseError.message || 'Unable to load projects');
+          }
+          return;
+        }
 
-      if (videosError) {
-        // On garde quand même les projets déjà visibles.
-        console.warn('Unable to enrich projects with videos:', videosError);
-        return;
-      }
+        const rawProjects = baseProjects ?? [];
+        const baseNormalized = rawProjects.map(normalizeProject);
 
-      const videosByProject = new Map();
+        if (!active) return;
 
-      for (const video of projectVideos ?? []) {
-        const current = videosByProject.get(video.project_id) ?? [];
-        current.push(video);
-        videosByProject.set(video.project_id, current);
-      }
+        setProjects(baseNormalized);
+        writeCachedProjects(baseNormalized);
+        lastRefreshAt = Date.now();
 
-      setProjects(
-        rawProjects.map((project) =>
+        if (rawProjects.length === 0) return;
+
+        const projectIds = rawProjects
+          .map((project) => project.id)
+          .filter(Boolean);
+
+        const videosQuery = supabase
+          .from('project_videos')
+          .select(`
+            id,
+            project_id,
+            title,
+            video_url,
+            mux_asset_id,
+            video_type,
+            orientation,
+            is_featured,
+            sort_order,
+            created_at
+          `)
+          .in('project_id', projectIds)
+          .order('sort_order', { ascending: true })
+          .order('created_at', { ascending: true });
+
+        const videosResult = await Promise.race([
+          videosQuery,
+          new Promise((resolve) =>
+            window.setTimeout(
+              () =>
+                resolve({
+                  data: null,
+                  error: { message: 'Project videos request timed out' },
+                }),
+              12000,
+            ),
+          ),
+        ]);
+
+        if (!active) return;
+
+        const { data: projectVideos, error: videosError } = videosResult;
+
+        if (videosError) {
+          // Les cartes restent déjà visibles grâce aux données de base.
+          console.warn(
+            'Unable to enrich projects with videos:',
+            videosError?.message || videosError,
+          );
+          return;
+        }
+
+        const videosByProject = new Map();
+
+        for (const video of projectVideos ?? []) {
+          const current = videosByProject.get(video.project_id) ?? [];
+          current.push(video);
+          videosByProject.set(video.project_id, current);
+        }
+
+        const enrichedProjects = rawProjects.map((project) =>
           normalizeProject({
             ...project,
             project_videos: videosByProject.get(project.id) ?? [],
           }),
-        ),
-      );
+        );
+
+        if (!active) return;
+
+        setProjects(enrichedProjects);
+        writeCachedProjects(enrichedProjects);
+      } finally {
+        requestInFlight = false;
+
+        if (active && !background) {
+          setProjectsLoading(false);
+        }
+      }
     }
 
-    loadProjects();
+    loadProjects({ background: projects.length > 0 });
+
+    const refreshInBackground = () => {
+      // Safari peut envoyer plusieurs visibility/pageshow rapprochés.
+      // On limite donc les rechargements à un maximum toutes les 20 secondes.
+      if (Date.now() - lastRefreshAt < 20000) return;
+      loadProjects({ background: true });
+    };
 
     const handlePageShow = (event) => {
       if (event.persisted) {
-        loadProjects();
+        refreshInBackground();
       }
     };
 
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
-        loadProjects();
+        refreshInBackground();
       }
     };
 
+    const handleOnline = () => {
+      refreshInBackground();
+    };
+
     window.addEventListener('pageshow', handlePageShow);
+    window.addEventListener('online', handleOnline);
     document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
       active = false;
       window.removeEventListener('pageshow', handlePageShow);
+      window.removeEventListener('online', handleOnline);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
@@ -1505,13 +1601,22 @@ export default function Portfolio() {
                 </div>
               </Reveal>
 
-              {projectsLoading ? (
-                <div className="border-y border-white/10 py-24 text-center text-sm text-white/35">
-                  Loading selected work…
+              {projectsLoading && projects.length === 0 ? (
+                <div className="border-y border-white/10 py-16 text-center text-sm text-white/35">
+                  Chargement des travaux sélectionnés…
                 </div>
-              ) : projectsError ? (
-                <div className="border-y border-white/10 py-24 text-center text-sm text-white/35">
-                  Projects are temporarily unavailable.
+              ) : projectsError && projects.length === 0 ? (
+                <div className="border-y border-white/10 py-16 text-center">
+                  <p className="text-sm text-white/40">
+                    Les projets sont momentanément indisponibles.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => window.location.reload()}
+                    className="mt-5 rounded-full border border-[#e10600]/45 px-5 py-3 text-[10px] uppercase tracking-[0.16em] text-white/75 hover:bg-[var(--accent)] hover:text-white transition-colors"
+                  >
+                    Réessayer
+                  </button>
                 </div>
               ) : projects.length === 0 ? (
                 <div className="border-y border-white/10 py-24 text-center text-sm text-white/35">
