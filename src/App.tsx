@@ -302,43 +302,50 @@ function PreviewMedia({ project, active }) {
   const playbackId = muxPlaybackId(project.video);
   const muxRef = useRef(null);
   const videoRef = useRef(null);
-  const [hasActivated, setHasActivated] = useState(false);
+  const [mediaReady, setMediaReady] = useState(false);
+  const [mediaFailed, setMediaFailed] = useState(false);
 
   useEffect(() => {
-    if (active) setHasActivated(true);
-  }, [active]);
+    setMediaReady(false);
+    setMediaFailed(false);
+  }, [project.id, project.video, project.previewVideo]);
 
   useEffect(() => {
-    const player = muxRef.current;
-
-    if (playbackId && player) {
-      if (active) {
-        try {
-          player.muted = true;
-        } catch {}
-
-        const playPromise = player.play?.();
-        if (playPromise?.catch) {
-          playPromise.catch(() => {});
-        }
-      } else {
-        player.pause?.();
-      }
-
+    if (!active) {
+      setMediaReady(false);
+      muxRef.current?.pause?.();
+      videoRef.current?.pause?.();
       return;
     }
 
-    if (!videoRef.current || !project.previewVideo) return;
+    const player = muxRef.current;
 
-    if (active) {
-      videoRef.current.muted = true;
-      videoRef.current.play().catch(() => {});
-    } else {
-      videoRef.current.pause();
+    if (playbackId && player) {
+      try {
+        player.muted = true;
+      } catch {}
+
+      const playPromise = player.play?.();
+      if (playPromise?.catch) {
+        playPromise.catch(() => {
+          // iOS peut refuser l'autoplay dans certains cas.
+          // On garde alors simplement la couverture visible.
+          setMediaReady(false);
+        });
+      }
+      return;
     }
-  }, [active, playbackId, project.previewVideo, hasActivated]);
+
+    if (videoRef.current && project.previewVideo) {
+      videoRef.current.muted = true;
+      videoRef.current.play().catch(() => {
+        setMediaReady(false);
+      });
+    }
+  }, [active, playbackId, project.previewVideo]);
 
   const hasVideo = Boolean(playbackId || project.previewVideo);
+  const showVideo = active && mediaReady && !mediaFailed;
 
   return (
     <>
@@ -349,27 +356,36 @@ function PreviewMedia({ project, active }) {
           event.currentTarget.src = FALLBACK_PROJECT_IMAGE;
         }}
         className={`absolute inset-0 w-full h-full object-cover transition-[opacity,transform] duration-500 ${
-          active && hasVideo
+          showVideo
             ? 'opacity-0 scale-[1.015]'
             : 'opacity-100 scale-100'
         }`}
-        loading="lazy"
+        loading="eager"
+        decoding="async"
       />
 
-      {playbackId && hasActivated && (
+      {active && playbackId && !mediaFailed && (
         <MuxPlayer
           ref={muxRef}
           playbackId={playbackId}
           streamType="on-demand"
-          autoPlay={active ? 'muted' : false}
+          autoPlay="muted"
           muted
           loop
           playsInline
-          preload={active ? 'auto' : 'metadata'}
+          preload="auto"
           poster={project.thumbnail}
           videoTitle={`${project.title} preview`}
+          onPlaying={() => setMediaReady(true)}
+          onCanPlay={() => {
+            if (active) setMediaReady(true);
+          }}
+          onError={() => {
+            setMediaFailed(true);
+            setMediaReady(false);
+          }}
           className={`absolute inset-0 w-full h-full pointer-events-none transition-opacity duration-300 ${
-            active ? 'opacity-100' : 'opacity-0'
+            showVideo ? 'opacity-100' : 'opacity-0'
           }`}
           style={{
             width: '100%',
@@ -382,19 +398,35 @@ function PreviewMedia({ project, active }) {
         />
       )}
 
-      {!playbackId && project.previewVideo && (
+      {active && !playbackId && project.previewVideo && !mediaFailed && (
         <video
           ref={videoRef}
           src={project.previewVideo}
+          autoPlay
           muted
           playsInline
           loop
-          preload="metadata"
+          preload="auto"
           poster={project.thumbnail}
+          onPlaying={() => setMediaReady(true)}
+          onCanPlay={() => setMediaReady(true)}
+          onError={() => {
+            setMediaFailed(true);
+            setMediaReady(false);
+          }}
           className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 pointer-events-none ${
-            active ? 'opacity-100' : 'opacity-0'
+            showVideo ? 'opacity-100' : 'opacity-0'
           }`}
         />
+      )}
+
+      {active && hasVideo && !mediaReady && !mediaFailed && (
+        <div className="absolute inset-0 z-[4] pointer-events-none flex items-end justify-start p-4 md:p-6">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/45 backdrop-blur-md px-3 py-2 text-[8px] uppercase tracking-[0.16em] text-white/65">
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] pulse-dot" />
+            Loading preview
+          </span>
+        </div>
       )}
     </>
   );
@@ -423,15 +455,13 @@ function ProjectCard({ project, index }) {
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        // Sur téléphone il n'existe pas de vrai "hover".
-        // La preview démarre dès que la carte occupe une partie confortable de l'écran.
-        setMobileActive(
-          entry.isIntersecting && entry.intersectionRatio >= 0.28,
-        );
+        setMobileActive(entry.isIntersecting);
       },
       {
-        threshold: [0, 0.15, 0.28, 0.45, 0.7],
-        rootMargin: '-10% 0px -18% 0px',
+        // La carte devient active lorsqu'elle traverse la zone centrale.
+        // Cela évite d'avoir deux previews Mux actives en même temps sur iPhone.
+        threshold: 0.01,
+        rootMargin: '-24% 0px -30% 0px',
       },
     );
 
@@ -443,8 +473,10 @@ function ProjectCard({ project, index }) {
   const filmCount = project.videos?.length || (project.video ? 1 : 0);
 
   return (
-    <Reveal delay={Math.min(index * 70, 280)}>
-      <article ref={cardRef} className="group border-t border-white/10 hover:border-[#e10600]/45 transition-colors duration-500 pt-5 md:pt-7">
+    <article
+      ref={cardRef}
+      className="group border-t border-white/10 hover:border-[#e10600]/45 transition-colors duration-500 pt-5 md:pt-7"
+    >
         <a
           href={`#work/${project.slug}`}
           className="block"
@@ -504,8 +536,7 @@ function ProjectCard({ project, index }) {
             </div>
           </div>
         </a>
-      </article>
-    </Reveal>
+    </article>
   );
 }
 
@@ -741,7 +772,7 @@ export default function Portfolio() {
       if (!active) return;
 
       if (baseError) {
-        console.error('Unable to load portfolio projects:', baseError);
+        console.error('Unable to load portfolio projects:', baseError?.message || baseError);
         setProjects([]);
         setProjectsError(baseError.message);
         setProjectsLoading(false);
@@ -806,8 +837,25 @@ export default function Portfolio() {
 
     loadProjects();
 
+    const handlePageShow = (event) => {
+      if (event.persisted) {
+        loadProjects();
+      }
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        loadProjects();
+      }
+    };
+
+    window.addEventListener('pageshow', handlePageShow);
+    document.addEventListener('visibilitychange', handleVisibility);
+
     return () => {
       active = false;
+      window.removeEventListener('pageshow', handlePageShow);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
 
@@ -1195,6 +1243,17 @@ export default function Portfolio() {
           70%, 100% { box-shadow: 0 0 0 18px rgba(225,6,0,0); }
         }
         @media (max-width: 767px) {
+          .project-media {
+            contain: layout paint;
+            backface-visibility: hidden;
+          }
+
+          .project-media mux-player,
+          .project-media video,
+          .project-media img {
+            transform: translateZ(0);
+          }
+
           html, body {
             width: 100%;
             max-width: 100%;
