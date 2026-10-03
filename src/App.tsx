@@ -427,15 +427,20 @@ function ProjectCard({ project, index }) {
               </div>
             </div>
 
-            <span className="shrink-0 w-11 h-11 md:w-14 md:h-14 rounded-full border border-white/15 flex items-center justify-center group-hover:bg-white group-hover:text-black group-hover:rotate-45 transition-all duration-500">
+            <span className="shrink-0 w-11 h-11 md:w-14 md:h-14 rounded-full border border-white/15 flex items-center justify-center group-hover:bg-[var(--accent)] group-hover:border-[var(--accent)] group-hover:text-white group-hover:rotate-45 transition-all duration-500">
               <ArrowUpRight size={18} />
             </span>
           </div>
 
-          <div className="signal-frame relative overflow-hidden bg-[#111] aspect-[16/11] md:aspect-[16/8.7] rounded-[1.1rem] md:rounded-[1.8rem]">
+          <div className="project-media signal-frame relative overflow-hidden bg-[#111] aspect-[16/11] md:aspect-[16/8.7] rounded-[1.1rem] md:rounded-[1.8rem]">
             <PreviewMedia project={project} active={active} />
 
             <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/5 pointer-events-none" />
+
+            <div className="absolute top-4 left-4 md:top-6 md:left-6 pointer-events-none flex items-center gap-2 text-[8px] md:text-[9px] uppercase tracking-[0.18em] text-white/55">
+              <span className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-[var(--accent)] pulse-dot' : 'bg-white/35'}`} />
+              <span>{active ? 'Preview playing' : `Film ${String(index + 1).padStart(2, '0')}`}</span>
+            </div>
 
             <div className="absolute left-4 right-4 bottom-4 md:left-7 md:right-7 md:bottom-6 flex items-end justify-between gap-4 pointer-events-none">
               <div className="max-w-[70%]">
@@ -550,7 +555,7 @@ function ProjectDetail({ project, projects }) {
         </div>
 
         {additionalVideos.length > 0 && (
-          <section className="py-24 md:py-32 border-b border-white/10">
+          <section className="red-divider py-24 md:py-32 border-b border-white/10">
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12 md:mb-16">
               <div>
                 <SectionLabel index="02">Selected films</SectionLabel>
@@ -563,7 +568,7 @@ function ProjectDetail({ project, projects }) {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-6 lg:gap-10 items-start">
+            <div className="film-strip -mx-5 px-5 flex gap-5 overflow-x-auto snap-x snap-mandatory pb-3 md:mx-0 md:px-0 md:grid md:grid-cols-2 md:gap-6 lg:gap-10 md:overflow-visible md:snap-none items-start">
               {additionalVideos.map((film, index) => {
                 const orientation = film.orientation || 'horizontal';
                 const aspectClass =
@@ -576,7 +581,13 @@ function ProjectDetail({ project, projects }) {
                 return (
                   <article
                     key={film.id || `${film.video_url}-${index}`}
-                    className={index % 2 === 1 ? 'md:mt-20' : ''}
+                    className={`shrink-0 snap-center ${
+                      orientation === 'vertical'
+                        ? 'w-[72vw] max-w-[360px] md:w-auto'
+                        : orientation === 'square'
+                          ? 'w-[78vw] max-w-[440px] md:w-auto'
+                          : 'w-[88vw] max-w-[720px] md:w-auto'
+                    } ${index % 2 === 1 ? 'md:mt-20' : ''}`}
                   >
                     <div className={`signal-frame bg-black overflow-hidden rounded-[1.2rem] ${aspectClass}`}>
                       <ProjectVideoPlayer
@@ -608,7 +619,7 @@ function ProjectDetail({ project, projects }) {
         )}
 
         {project.gallery.length > 0 && (
-          <section className="py-24 md:py-32 border-b border-white/10">
+          <section className="red-divider py-24 md:py-32 border-b border-white/10">
             <SectionLabel index={additionalVideos.length > 0 ? '03' : '02'}>Frames</SectionLabel>
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mt-10">
               {project.gallery.map((image, index) => (
@@ -640,7 +651,7 @@ function ProjectDetail({ project, projects }) {
             <p className="text-[10px] md:text-xs uppercase tracking-[0.18em] text-white/35 mb-7">
               Next project
             </p>
-            <a href={`#work/${nextProject.slug}`} className="group flex items-end justify-between gap-6 border-b border-white/10 pb-8">
+            <a href={`#work/${nextProject.slug}`} className="group flex items-end justify-between gap-6 border-b border-white/10 hover:border-[#e10600]/55 pb-8 transition-colors duration-500">
               <h2 className="text-[clamp(2.7rem,8vw,8rem)] leading-[0.82] tracking-[-0.06em] uppercase font-semibold group-hover:text-[var(--accent)] transition-colors">
                 {nextProject.title}
               </h2>
@@ -662,6 +673,7 @@ export default function Portfolio() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [showreelPlaying, setShowreelPlaying] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -772,10 +784,21 @@ export default function Portfolio() {
   }, []);
 
   useEffect(() => {
-    const onScroll = () => setIsScrolled(window.scrollY > 40);
+    const onScroll = () => {
+      setIsScrolled(window.scrollY > 40);
+
+      const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+      setScrollProgress(Math.min(100, Math.max(0, (window.scrollY / maxScroll) * 100)));
+    };
+
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    window.addEventListener('resize', onScroll);
+
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+    };
   }, []);
 
   useEffect(() => {
@@ -938,11 +961,84 @@ export default function Portfolio() {
           background: var(--accent);
           pointer-events: none;
         }
+
+        .red-divider {
+          position: relative;
+        }
+        .red-divider::before {
+          content: '';
+          position: absolute;
+          left: 0;
+          top: -1px;
+          width: clamp(72px, 12vw, 180px);
+          height: 2px;
+          background: var(--accent);
+          box-shadow: 0 0 18px rgba(225, 6, 0, .35);
+        }
+        .project-media {
+          transition: border-color .55s ease, box-shadow .55s ease, transform .7s cubic-bezier(.16,1,.3,1);
+        }
+        .group:hover .project-media {
+          border-color: rgba(225, 6, 0, .68);
+          box-shadow: 0 24px 80px rgba(0,0,0,.5), 0 0 0 1px rgba(225,6,0,.08);
+          transform: translateY(-3px);
+        }
+        .cta-red {
+          background: var(--accent);
+          color: white;
+          box-shadow: 0 12px 36px rgba(225,6,0,.18);
+        }
+        .cta-red:hover {
+          background: white;
+          color: black;
+          box-shadow: 0 14px 42px rgba(255,255,255,.08);
+        }
+        .hud-corner {
+          position: absolute;
+          width: 34px;
+          height: 34px;
+          border-color: rgba(225, 6, 0, .78);
+          pointer-events: none;
+        }
+        .hud-corner.tl {
+          top: 0;
+          left: 0;
+          border-top: 1px solid;
+          border-left: 1px solid;
+        }
+        .hud-corner.br {
+          right: 0;
+          bottom: 0;
+          border-right: 1px solid;
+          border-bottom: 1px solid;
+        }
+        .film-strip {
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+        .film-strip::-webkit-scrollbar {
+          display: none;
+        }
+        .play-ring {
+          box-shadow: 0 0 0 0 rgba(225,6,0,.28);
+          animation: playRing 2.6s ease-out infinite;
+        }
+        @keyframes playRing {
+          0% { box-shadow: 0 0 0 0 rgba(225,6,0,.30); }
+          70%, 100% { box-shadow: 0 0 0 18px rgba(225,6,0,0); }
+        }
         @media (prefers-reduced-motion: reduce) {
-          .hero-in, .pulse-dot { animation: none !important; }
+          .hero-in, .pulse-dot, .play-ring { animation: none !important; }
+          .project-media { transform: none !important; }
           * { scroll-behavior: auto !important; }
         }
       `}</style>
+
+      <div
+        aria-hidden="true"
+        className="fixed left-0 top-0 z-[80] h-[2px] bg-[var(--accent)] shadow-[0_0_14px_rgba(225,6,0,.55)] transition-[width] duration-150"
+        style={{ width: `${scrollProgress}%` }}
+      />
 
       <nav
         id="site-nav"
@@ -990,7 +1086,7 @@ export default function Portfolio() {
             <div className="flex items-center gap-2">
               <button
                 onClick={handlePrimaryCta}
-                className="hidden sm:inline-flex items-center gap-2 rounded-full bg-white text-black px-4 md:px-5 py-2.5 text-[9px] md:text-[10px] uppercase tracking-[0.15em] font-semibold hover:bg-[var(--accent)] hover:text-white transition-colors"
+                className="cta-red hidden sm:inline-flex items-center gap-2 rounded-full px-4 md:px-5 py-2.5 text-[9px] md:text-[10px] uppercase tracking-[0.15em] font-semibold transition-all duration-300"
               >
                 Contact
                 <ArrowUpRight size={13} />
@@ -1014,7 +1110,7 @@ export default function Portfolio() {
                 <button
                   key={item}
                   onClick={() => scrollToSection(item)}
-                  className="flex items-center justify-between border-b border-white/10 py-5 text-left text-4xl uppercase tracking-[-0.04em]"
+                  className="flex items-center justify-between border-b border-white/10 py-5 text-left text-4xl uppercase tracking-[-0.04em] hover:text-[var(--accent)] hover:border-[#e10600]/45 transition-colors"
                 >
                   <span>{item}</span>
                   <span className="text-xs text-white/30">0{index + 1}</span>
@@ -1070,6 +1166,16 @@ export default function Portfolio() {
 
               <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/15 to-black/90" />
               <div className="absolute inset-0 bg-gradient-to-r from-black/45 via-transparent to-black/10" />
+
+              <div className="absolute inset-x-5 md:inset-x-10 lg:inset-x-14 top-24 md:top-28 bottom-6 md:bottom-8 pointer-events-none opacity-80">
+                <span className="hud-corner tl" />
+                <span className="hud-corner br" />
+                <div className="absolute top-0 right-0 flex items-center gap-2 text-[8px] md:text-[9px] uppercase tracking-[0.2em] text-white/45">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] pulse-dot" />
+                  <span>REC</span>
+                  <span className="text-white/25">4K · 25FPS</span>
+                </div>
+              </div>
             </div>
 
             <div className="relative z-10 w-full max-w-[1600px] mx-auto px-5 md:px-10 lg:px-14 pb-8 md:pb-10 pt-36">
@@ -1095,14 +1201,14 @@ export default function Portfolio() {
                 <div className="md:col-span-7 lg:col-span-5 lg:col-start-8 flex flex-col sm:flex-row gap-3 md:justify-end">
                   <button
                     onClick={handlePrimaryCta}
-                    className="min-h-14 px-6 rounded-full bg-white text-black flex items-center justify-between gap-6 text-[10px] uppercase tracking-[0.16em] font-semibold hover:bg-[var(--accent)] hover:text-white transition-colors"
+                    className="cta-red min-h-14 px-6 rounded-full flex items-center justify-between gap-6 text-[10px] uppercase tracking-[0.16em] font-semibold transition-all duration-300"
                   >
                     <span>{siteSettings.hero_primary_cta}</span>
                     <ArrowUpRight size={16} />
                   </button>
                   <button
                     onClick={() => scrollToSection('work')}
-                    className="min-h-14 px-6 rounded-full border border-white/20 bg-black/20 backdrop-blur-md flex items-center justify-between gap-6 text-[10px] uppercase tracking-[0.16em] hover:border-white/55 transition-colors"
+                    className="min-h-14 px-6 rounded-full border border-[#e10600]/55 bg-black/30 backdrop-blur-md flex items-center justify-between gap-6 text-[10px] uppercase tracking-[0.16em] hover:border-[#e10600] hover:bg-[#e10600]/10 transition-all duration-300"
                   >
                     <span>{siteSettings.hero_secondary_cta}</span>
                     <ArrowRight size={16} />
@@ -1110,7 +1216,7 @@ export default function Portfolio() {
                 </div>
               </div>
 
-              <div className="hero-in hero-delay-3 mt-10 md:mt-12 border-t border-white/15 pt-5 flex items-center justify-between text-[9px] md:text-[10px] uppercase tracking-[0.18em] text-white/35">
+              <div className="red-divider hero-in hero-delay-3 mt-10 md:mt-12 border-t border-white/15 pt-5 flex items-center justify-between text-[9px] md:text-[10px] uppercase tracking-[0.18em] text-white/35">
                 <span>Videomaker / Editor / Content Creator</span>
                 <button onClick={() => scrollToSection('work')} className="flex items-center gap-2 hover:text-white transition-colors">
                   Scroll to work <span>↓</span>
@@ -1119,7 +1225,7 @@ export default function Portfolio() {
             </div>
           </section>
 
-          <section id="work" className="px-5 md:px-10 lg:px-14 py-24 md:py-36 bg-[#050505]">
+          <section id="work" className="red-rule px-5 md:px-10 lg:px-14 py-24 md:py-36 bg-[#050505]">
             <div className="max-w-[1600px] mx-auto">
               <Reveal className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end mb-16 md:mb-24">
                 <div className="lg:col-span-8">
@@ -1193,7 +1299,7 @@ export default function Portfolio() {
                         </h2>
                       </div>
 
-                      <span className="shrink-0 w-16 h-16 md:w-24 md:h-24 rounded-full bg-white text-black flex items-center justify-center group-hover:bg-[var(--accent)] group-hover:text-white group-hover:scale-105 transition-all duration-500">
+                      <span className="play-ring shrink-0 w-16 h-16 md:w-24 md:h-24 rounded-full bg-[var(--accent)] text-white flex items-center justify-center group-hover:bg-white group-hover:text-black group-hover:scale-105 transition-all duration-500">
                         <Play size={28} fill="currentColor" className="ml-1" />
                       </span>
                     </div>
