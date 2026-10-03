@@ -205,7 +205,10 @@ function ProjectVideoPlayer({ url, poster, title }) {
         poster={poster}
         videoTitle={title}
         accentColor={ACCENT}
-        className="w-full h-full"
+        controls
+        playsInline
+        preload="metadata"
+        className="w-full h-full project-detail-player"
         style={{
           width: '100%',
           height: '100%',
@@ -1254,6 +1257,11 @@ export default function Portfolio() {
             transform: translateZ(0);
           }
 
+          .project-detail-player {
+            --controls: auto;
+            touch-action: manipulation;
+          }
+
           html, body {
             width: 100%;
             max-width: 100%;
@@ -1263,10 +1271,6 @@ export default function Portfolio() {
           .project-media {
             min-height: 0;
             transform: translateZ(0);
-          }
-
-          mux-player {
-            --controls: none;
           }
 
           .signal-frame::before {
