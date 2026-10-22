@@ -28,10 +28,13 @@ const EMPTY_PROJECT = {
   title: '',
   slug: '',
   category: '',
+  category_it: '',
   year: new Date().getFullYear(),
   location: 'Italy',
   description: '',
+  description_it: '',
   roles: [],
+  roles_it: [],
   thumbnail_url: '',
   preview_video_url: '',
   video_url: '',
@@ -729,11 +732,20 @@ function SiteContentManager({ session, onClose }) {
     hero_location_line: '',
     hero_primary_cta: '',
     hero_secondary_cta: '',
+    hero_title_it: '',
+    hero_roles_it: '',
+    hero_location_line_it: '',
+    hero_primary_cta_it: '',
+    hero_secondary_cta_it: '',
     about_heading: '',
     about_body: '',
+    about_heading_it: '',
+    about_body_it: '',
     about_image_url: '',
     contact_heading: '',
     contact_description: '',
+    contact_heading_it: '',
+    contact_description_it: '',
     contact_email: '',
     whatsapp_number: '',
     instagram_url: '',
@@ -768,11 +780,20 @@ function SiteContentManager({ session, onClose }) {
         hero_location_line,
         hero_primary_cta,
         hero_secondary_cta,
+        hero_title_it,
+        hero_roles_it,
+        hero_location_line_it,
+        hero_primary_cta_it,
+        hero_secondary_cta_it,
         about_heading,
         about_body,
+        about_heading_it,
+        about_body_it,
         about_image_url,
         contact_heading,
         contact_description,
+        contact_heading_it,
+        contact_description_it,
         contact_email,
         whatsapp_number,
         instagram_url,
@@ -791,11 +812,20 @@ function SiteContentManager({ session, onClose }) {
         hero_location_line: data?.hero_location_line ?? '',
         hero_primary_cta: data?.hero_primary_cta ?? '',
         hero_secondary_cta: data?.hero_secondary_cta ?? '',
+        hero_title_it: data?.hero_title_it ?? '',
+        hero_roles_it: data?.hero_roles_it ?? '',
+        hero_location_line_it: data?.hero_location_line_it ?? '',
+        hero_primary_cta_it: data?.hero_primary_cta_it ?? '',
+        hero_secondary_cta_it: data?.hero_secondary_cta_it ?? '',
         about_heading: data?.about_heading ?? '',
         about_body: data?.about_body ?? '',
+        about_heading_it: data?.about_heading_it ?? '',
+        about_body_it: data?.about_body_it ?? '',
         about_image_url: data?.about_image_url ?? '',
         contact_heading: data?.contact_heading ?? '',
         contact_description: data?.contact_description ?? '',
+        contact_heading_it: data?.contact_heading_it ?? '',
+        contact_description_it: data?.contact_description_it ?? '',
         contact_email: data?.contact_email ?? '',
         whatsapp_number: data?.whatsapp_number ?? '',
         instagram_url: data?.instagram_url ?? '',
@@ -836,11 +866,20 @@ function SiteContentManager({ session, onClose }) {
         hero_location_line: cleanText(form.hero_location_line),
         hero_primary_cta: cleanText(form.hero_primary_cta),
         hero_secondary_cta: cleanText(form.hero_secondary_cta),
+        hero_title_it: cleanText(form.hero_title_it),
+        hero_roles_it: cleanText(form.hero_roles_it),
+        hero_location_line_it: cleanText(form.hero_location_line_it),
+        hero_primary_cta_it: cleanText(form.hero_primary_cta_it),
+        hero_secondary_cta_it: cleanText(form.hero_secondary_cta_it),
         about_heading: cleanText(form.about_heading),
         about_body: cleanText(form.about_body),
+        about_heading_it: cleanText(form.about_heading_it),
+        about_body_it: cleanText(form.about_body_it),
         about_image_url: cleanText(form.about_image_url) || null,
         contact_heading: cleanText(form.contact_heading),
         contact_description: cleanText(form.contact_description),
+        contact_heading_it: cleanText(form.contact_heading_it),
+        contact_description_it: cleanText(form.contact_description_it),
         contact_email: cleanText(form.contact_email),
         whatsapp_number: cleanText(form.whatsapp_number) || null,
         instagram_url: cleanText(form.instagram_url),
@@ -946,6 +985,64 @@ function SiteContentManager({ session, onClose }) {
               </section>
 
               <section className="border-t border-white/10 pt-10">
+                <div className="flex items-center justify-between gap-4 mb-5">
+                  <p className="text-[10px] tracking-[0.2em] uppercase text-red-300">
+                    Version italienne — Hero / Accueil
+                  </p>
+                  <span className="text-[9px] uppercase tracking-[0.16em] text-gray-600 border border-white/10 px-3 py-1.5">
+                    IT
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <Field label="Grand titre IT">
+                    <textarea
+                      value={form.hero_title_it}
+                      onChange={(e) => update('hero_title_it', e.target.value)}
+                      className="admin-input min-h-28 resize-y"
+                      placeholder={"STORIE VISIVE\nCHE PRENDONO VITA."}
+                    />
+                  </Field>
+
+                  <Field label="Métiers IT">
+                    <input
+                      value={form.hero_roles_it}
+                      onChange={(e) => update('hero_roles_it', e.target.value)}
+                      className="admin-input"
+                      placeholder="VIDEOMAKER · FILMMAKER · CONTENT CREATOR"
+                    />
+                  </Field>
+
+                  <Field label="Localisation / disponibilité IT">
+                    <input
+                      value={form.hero_location_line_it}
+                      onChange={(e) => update('hero_location_line_it', e.target.value)}
+                      className="admin-input"
+                      placeholder="BASE A PARMA · DISPONIBILE IN ITALIA E ALL’ESTERO"
+                    />
+                  </Field>
+
+                  <Field label="Bouton principal IT">
+                    <input
+                      value={form.hero_primary_cta_it}
+                      onChange={(e) => update('hero_primary_cta_it', e.target.value)}
+                      className="admin-input"
+                      placeholder="LAVORIAMO INSIEME"
+                    />
+                  </Field>
+
+                  <Field label="Bouton secondaire IT">
+                    <input
+                      value={form.hero_secondary_cta_it}
+                      onChange={(e) => update('hero_secondary_cta_it', e.target.value)}
+                      className="admin-input"
+                      placeholder="LAVORI SELEZIONATI"
+                    />
+                  </Field>
+                </div>
+              </section>
+
+              <section className="border-t border-white/10 pt-10">
                 <p className="text-[10px] tracking-[0.2em] uppercase text-cyan-300 mb-5">
                   À propos
                 </p>
@@ -1015,6 +1112,35 @@ function SiteContentManager({ session, onClose }) {
               </section>
 
               <section className="border-t border-white/10 pt-10">
+                <div className="flex items-center justify-between gap-4 mb-5">
+                  <p className="text-[10px] tracking-[0.2em] uppercase text-red-300">
+                    Version italienne — À propos
+                  </p>
+                  <span className="text-[9px] uppercase tracking-[0.16em] text-gray-600 border border-white/10 px-3 py-1.5">
+                    IT
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 gap-5">
+                  <Field label="Titre / introduction IT">
+                    <textarea
+                      value={form.about_heading_it}
+                      onChange={(e) => update('about_heading_it', e.target.value)}
+                      className="admin-input min-h-28 resize-y"
+                    />
+                  </Field>
+
+                  <Field label="Texte IT">
+                    <textarea
+                      value={form.about_body_it}
+                      onChange={(e) => update('about_body_it', e.target.value)}
+                      className="admin-input min-h-64 resize-y"
+                    />
+                  </Field>
+                </div>
+              </section>
+
+              <section className="border-t border-white/10 pt-10">
                 <p className="text-[10px] tracking-[0.2em] uppercase text-cyan-300 mb-5">
                   Contact
                 </p>
@@ -1032,6 +1158,22 @@ function SiteContentManager({ session, onClose }) {
                     <textarea
                       value={form.contact_description}
                       onChange={(e) => update('contact_description', e.target.value)}
+                      className="admin-input min-h-28 resize-y"
+                    />
+                  </Field>
+
+                  <Field label="Grand titre IT">
+                    <textarea
+                      value={form.contact_heading_it}
+                      onChange={(e) => update('contact_heading_it', e.target.value)}
+                      className="admin-input min-h-28 resize-y"
+                    />
+                  </Field>
+
+                  <Field label="Description IT">
+                    <textarea
+                      value={form.contact_description_it}
+                      onChange={(e) => update('contact_description_it', e.target.value)}
                       className="admin-input min-h-28 resize-y"
                     />
                   </Field>
@@ -1520,6 +1662,10 @@ function ProjectEditor({
     (project?.roles ?? []).join('\n'),
   )
 
+  const [rolesItText, setRolesItText] = useState(
+    (project?.roles_it ?? []).join('\n'),
+  )
+
   const [galleryText, setGalleryText] = useState(
     (project?.gallery ?? []).join('\n'),
   )
@@ -1951,10 +2097,16 @@ function ProjectEditor({
       title: cleanText(form.title),
       slug: cleanText(form.slug) || slugify(form.title),
       category: cleanText(form.category) || null,
+      category_it: cleanText(form.category_it) || null,
       year: form.year ? Number(form.year) : null,
       location: cleanText(form.location) || null,
       description: cleanText(form.description) || null,
+      description_it: cleanText(form.description_it) || null,
       roles: rolesText
+        .split('\n')
+        .map((item) => item.trim())
+        .filter(Boolean),
+      roles_it: rolesItText
         .split('\n')
         .map((item) => item.trim())
         .filter(Boolean),
@@ -2093,6 +2245,15 @@ function ProjectEditor({
                 />
               </Field>
 
+              <Field label="Catégorie IT">
+                <input
+                  value={form.category_it ?? ''}
+                  onChange={(e) => update('category_it', e.target.value)}
+                  className="admin-input"
+                  placeholder="Copertura evento"
+                />
+              </Field>
+
               <Field label="Année">
                 <input
                   type="number"
@@ -2130,6 +2291,15 @@ function ProjectEditor({
                 onChange={(e) => update('description', e.target.value)}
                 className="admin-input"
                 placeholder="Présente le contexte, l'objectif et le travail réalisé..."
+              />
+            </Field>
+
+            <Field label="Description IT" hint="Version italienne affichée quand le visiteur choisit IT">
+              <textarea
+                value={form.description_it ?? ''}
+                onChange={(e) => update('description_it', e.target.value)}
+                className="admin-input"
+                placeholder="Descrivi il contesto, l’obiettivo e il lavoro realizzato..."
               />
             </Field>
 
@@ -2492,7 +2662,7 @@ function ProjectEditor({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
               <Field
-                label="Rôles"
+                label="Rôles FR"
                 hint="Un rôle par ligne"
               >
                 <textarea
@@ -2500,6 +2670,18 @@ function ProjectEditor({
                   onChange={(e) => setRolesText(e.target.value)}
                   className="admin-input"
                   placeholder={'Videography\nEditing\nColor Grading'}
+                />
+              </Field>
+
+              <Field
+                label="Rôles IT"
+                hint="Un ruolo per riga"
+              >
+                <textarea
+                  value={rolesItText}
+                  onChange={(e) => setRolesItText(e.target.value)}
+                  className="admin-input"
+                  placeholder={'Videomaker\nMontaggio\nColor grading'}
                 />
               </Field>
 

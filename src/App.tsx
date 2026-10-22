@@ -25,7 +25,8 @@ const ACCENT = '#e10600';
 
 const PORTFOLIO_DATA = {
   name: 'Yaël Noukimi',
-  shortName: 'YN',
+  brand: 'LORIK.NK',
+  shortName: 'LN',
   email: 'hello@yaelnoukimi.com',
   socials: {
     instagram: 'https://instagram.com/',
@@ -41,7 +42,7 @@ const DEFAULT_SETTINGS = {
   showreel_url: '',
   hero_title: 'VISUAL STORIES\nTHAT FEEL ALIVE.',
   hero_roles: 'VIDEOMAKER · FILMMAKER · CONTENT CREATOR',
-  hero_location_line: 'BASED IN ITALY · AVAILABLE WORLDWIDE',
+  hero_location_line: 'BASÉ À PARME · DISPONIBLE EN ITALIE ET À L’INTERNATIONAL',
   hero_primary_cta: "LET'S WORK TOGETHER",
   hero_secondary_cta: 'SELECTED WORK',
   about_heading:
@@ -62,6 +63,184 @@ const DEFAULT_SETTINGS = {
   tiktok_url: PORTFOLIO_DATA.socials.tiktok,
   linkedin_url: PORTFOLIO_DATA.socials.linkedin,
 };
+
+const IT_SETTINGS_DEFAULTS = {
+  hero_title: 'STORIE VISIVE\nCHE PRENDONO VITA.',
+  hero_roles: 'VIDEOMAKER · FILMMAKER · CONTENT CREATOR',
+  hero_location_line: 'BASE A PARMA · DISPONIBILE IN ITALIA E ALL’ESTERO',
+  hero_primary_cta: 'LAVORIAMO INSIEME',
+  hero_secondary_cta: 'LAVORI SELEZIONATI',
+  about_heading:
+    'Sono Yaël Noukimi, filmmaker e creative director dietro LORIK.NK.',
+  about_body: [
+    'Creo contenuti audiovisivi per eventi, brand, artisti e piattaforme social: dall’idea e dalle riprese fino al montaggio, al colore e alla consegna finale.',
+    'Il mio approccio è cinematografico ma concreto: ogni inquadratura deve servire l’atmosfera, il messaggio e la piattaforma su cui il contenuto verrà visto.',
+    'LORIK.NK è il mio universo personale: filmmaking, storytelling visivo e direzione creativa.',
+    'Studio Ingegneria Gestionale in Italia e porto questa visione tra creatività, tecnologia e business.',
+  ].join('\n\n'),
+  contact_heading: 'CREIAMO\nQUALCOSA\nDA RICORDARE.',
+  contact_description:
+    'Disponibile per produzioni freelance, eventi, branded content e collaborazioni creative.',
+};
+
+const UI_COPY = {
+  fr: {
+    nav: { work: 'projets', about: 'à propos', services: 'services', contact: 'contact' },
+    available: 'Disponible pour des projets sélectionnés',
+    heroFooter: 'Vidéaste / Monteur / Créateur de contenu',
+    scrollWork: 'Voir les projets',
+    selectedWork: 'Projets sélectionnés',
+    selectedWorkTitle: 'La vidéo d’abord.\nLe reste ensuite.',
+    selectedWorkDescription:
+      'Une sélection de films événementiels, campagnes, contenus sociaux et histoires visuelles.',
+    loadingWork: '{t.loadingWork}',
+    unavailableWork: '{t.unavailableWork}',
+    retry: '{t.retry}',
+    comingSoon: 'De nouveaux projets arrivent bientôt.',
+    showreel: 'Showreel',
+    showreelTitle: '60 secondes\nen mouvement.',
+    playShowreel: 'Lire le showreel',
+    whatIDo: 'Ce que je fais',
+    servicesTitle: 'Pensé autour\nde l’image en mouvement.',
+    servicesDescription:
+      'La vidéo est au cœur de mon travail. La photographie et le design complètent l’histoire quand le projet le demande.',
+    about: 'À propos',
+    contact: 'Contact',
+    based: 'Basé',
+    haveProject: 'Un projet ?',
+    letsTalk: 'Parlons-en.',
+    backToWork: '← Retour aux projets',
+    selectedWorkBack: '← Projets sélectionnés',
+    projectNotFound: 'Projet introuvable.',
+    project: 'Projet',
+    projectDetailsSoon: 'Les détails du projet arrivent bientôt.',
+    selectedFilms: 'Films sélectionnés',
+    moreFromProject: 'Plus de contenus\nde ce projet.',
+    additionalFilm: 'film supplémentaire',
+    additionalFilms: 'films supplémentaires',
+    frames: 'Images',
+    nextProject: 'Projet suivant',
+    previewPlaying: 'Aperçu en lecture',
+    loadingPreview: 'Chargement de l’aperçu',
+    viewProject: 'Voir le projet',
+    playingPreview: 'Lecture',
+    film: 'film',
+    films: 'films',
+    photoAlt: 'portrait de Yaël Noukimi',
+    footerRole: 'Vidéaste · Monteur · Créateur de contenu',
+    services: [
+      ['01', 'Production vidéo', 'Aftermovies, films événementiels, branded content, interviews, visuels musicaux et campagnes promotionnelles.'],
+      ['02', 'Post-production', 'Montage, rythme, étalonnage, sound design et déclinaisons adaptées à chaque format.'],
+      ['03', 'Contenu social', 'Reels verticaux, teasers, formats courts et contenus pensés pour le mobile.'],
+      ['04', 'Photographie', 'Photographie événementielle, portrait et lifestyle lorsque le projet demande un univers visuel complet.'],
+    ],
+    process: [
+      ['01', 'Brief', 'Objectif, audience, références et livrables.'],
+      ['02', 'Direction', 'Concept, langage visuel, plan de tournage et préparation de production.'],
+      ['03', 'Tournage', 'Capturer le mouvement, les moments et l’atmosphère.'],
+      ['04', 'Post-prod', 'Montage, couleur, son et versions pour chaque plateforme.'],
+      ['05', 'Livraison', 'Exports propres pour réseaux, web, écrans ou campagnes.'],
+    ],
+  },
+  it: {
+    nav: { work: 'progetti', about: 'chi sono', services: 'servizi', contact: 'contatti' },
+    available: 'Disponibile per progetti selezionati',
+    heroFooter: 'Videomaker / Editor / Content Creator',
+    scrollWork: 'Scopri i progetti',
+    selectedWork: 'Lavori selezionati',
+    selectedWorkTitle: 'Prima i film.\nTutto il resto dopo.',
+    selectedWorkDescription:
+      'Una selezione di film di eventi, campagne, contenuti social e storie visive.',
+    loadingWork: 'Caricamento dei lavori selezionati…',
+    unavailableWork: 'I progetti sono momentaneamente non disponibili.',
+    retry: 'Riprova',
+    comingSoon: 'Nuovi progetti in arrivo.',
+    showreel: 'Showreel',
+    showreelTitle: '60 secondi\ndi movimento.',
+    playShowreel: 'Riproduci showreel',
+    whatIDo: 'Cosa faccio',
+    servicesTitle: 'Costruito attorno\nall’immagine in movimento.',
+    servicesDescription:
+      'Il video è il centro del mio lavoro. Fotografia e design supportano la storia quando il progetto lo richiede.',
+    about: 'Chi sono',
+    contact: 'Contatti',
+    based: 'Base',
+    haveProject: 'Hai un progetto?',
+    letsTalk: 'Parliamone.',
+    backToWork: '← Torna ai progetti',
+    selectedWorkBack: '← Lavori selezionati',
+    projectNotFound: 'Progetto non trovato.',
+    project: 'Progetto',
+    projectDetailsSoon: 'I dettagli del progetto saranno disponibili presto.',
+    selectedFilms: 'Film selezionati',
+    moreFromProject: 'Altri contenuti\ndi questo progetto.',
+    additionalFilm: 'film aggiuntivo',
+    additionalFilms: 'film aggiuntivi',
+    frames: 'Fotogrammi',
+    nextProject: 'Progetto successivo',
+    previewPlaying: 'Anteprima in riproduzione',
+    loadingPreview: 'Caricamento anteprima',
+    viewProject: 'Vedi progetto',
+    playingPreview: 'In riproduzione',
+    film: 'film',
+    films: 'film',
+    photoAlt: 'ritratto di Yaël Noukimi',
+    footerRole: 'Videomaker · Editor · Content Creator',
+    services: [
+      ['01', 'Produzione video', 'Event film, aftermovie, branded content, interviste, visual musicali e campagne promozionali.'],
+      ['02', 'Post-produzione', 'Montaggio, ritmo, color grading, sound design e versioni ottimizzate per ogni formato.'],
+      ['03', 'Contenuti social', 'Reel verticali, teaser, short-form storytelling e contenuti pensati per il mobile.'],
+      ['04', 'Fotografia', 'Fotografia di eventi, ritratto e lifestyle quando il progetto richiede un pacchetto visivo completo.'],
+    ],
+    process: [
+      ['01', 'Brief', 'Obiettivi, pubblico, riferimenti e deliverable.'],
+      ['02', 'Direzione', 'Concept, linguaggio visivo, shot list e preparazione della produzione.'],
+      ['03', 'Riprese', 'Catturare movimento, momenti e atmosfera.'],
+      ['04', 'Post', 'Montaggio, colore, audio e versioni per ogni piattaforma.'],
+      ['05', 'Consegna', 'Export pronti per social, web, schermi e campagne.'],
+    ],
+  },
+};
+
+function localizeProject(project, language) {
+  if (!project || language !== 'it') return project;
+
+  return {
+    ...project,
+    category: project.category_it || project.category,
+    description: project.description_it || project.description,
+    roles:
+      Array.isArray(project.roles_it) && project.roles_it.length > 0
+        ? project.roles_it
+        : project.roles,
+  };
+}
+
+function LanguageSwitch({ language, onChange, compact = false }) {
+  return (
+    <div
+      className={`flex items-center rounded-full border border-white/10 bg-white/[0.035] p-1 ${
+        compact ? 'w-fit' : ''
+      }`}
+      aria-label="Language"
+    >
+      {['it', 'fr'].map((code) => (
+        <button
+          key={code}
+          type="button"
+          onClick={() => onChange(code)}
+          className={`rounded-full px-3 py-2 text-[9px] uppercase tracking-[0.16em] transition-colors ${
+            language === code
+              ? 'bg-[var(--accent)] text-white'
+              : 'text-white/45 hover:text-white'
+          }`}
+        >
+          {code}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 const SERVICES = [
   {
@@ -154,6 +333,7 @@ function normalizeProject(project) {
     slug: project.slug,
     title: project.title,
     category: project.category ?? '',
+    category_it: project.category_it ?? '',
     year: project.year ? String(project.year) : '',
     location: project.location ?? '',
     thumbnail: project.thumbnail_url || FALLBACK_PROJECT_IMAGE,
@@ -161,7 +341,9 @@ function normalizeProject(project) {
     video: featuredVideo?.video_url || '',
     videos,
     description: project.description ?? '',
+    description_it: project.description_it ?? '',
     roles: Array.isArray(project.roles) ? project.roles : [],
+    roles_it: Array.isArray(project.roles_it) ? project.roles_it : [],
     gallery: Array.isArray(project.gallery) ? project.gallery : [],
   };
 }
@@ -320,7 +502,7 @@ function SectionLabel({ index, children, light = false }) {
   );
 }
 
-function PreviewMedia({ project, active }) {
+function PreviewMedia({ project, active, t }) {
   const playbackId = muxPlaybackId(project.video);
   const muxRef = useRef(null);
   const videoRef = useRef(null);
@@ -446,7 +628,7 @@ function PreviewMedia({ project, active }) {
         <div className="absolute inset-0 z-[4] pointer-events-none flex items-end justify-start p-4 md:p-6">
           <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/45 backdrop-blur-md px-3 py-2 text-[8px] uppercase tracking-[0.16em] text-white/65">
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] pulse-dot" />
-            Loading preview
+            {t.loadingPreview}
           </span>
         </div>
       )}
@@ -454,7 +636,7 @@ function PreviewMedia({ project, active }) {
   );
 }
 
-function ProjectCard({ project, index }) {
+function ProjectCard({ project, index, t }) {
   const cardRef = useRef(null);
   const [hovered, setHovered] = useState(false);
   const [touch, setTouch] = useState(false);
@@ -522,7 +704,7 @@ function ProjectCard({ project, index }) {
                   {project.category && <span>{project.category}</span>}
                   {project.year && <span>· {project.year}</span>}
                   {filmCount > 0 && (
-                    <span>· {String(filmCount).padStart(2, '0')} film{filmCount > 1 ? 's' : ''}</span>
+                    <span>· {String(filmCount).padStart(2, '0')} {filmCount > 1 ? t.films : t.film}</span>
                   )}
                 </div>
               </div>
@@ -534,13 +716,13 @@ function ProjectCard({ project, index }) {
           </div>
 
           <div className="project-media signal-frame relative overflow-hidden bg-[#111] aspect-video md:aspect-[16/7.6] md:max-h-[620px] rounded-[1.1rem] md:rounded-[1.8rem]">
-            <PreviewMedia project={project} active={active} />
+            <PreviewMedia project={project} active={active} t={t} />
 
             <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/5 pointer-events-none" />
 
             <div className="absolute top-4 left-4 md:top-6 md:left-6 pointer-events-none flex items-center gap-2 text-[8px] md:text-[9px] uppercase tracking-[0.18em] text-white/55">
               <span className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-[var(--accent)] pulse-dot' : 'bg-white/35'}`} />
-              <span>{active ? 'Preview playing' : `Film ${String(index + 1).padStart(2, '0')}`}</span>
+              <span>{active ? t.previewPlaying : `Film ${String(index + 1).padStart(2, '0')}`}</span>
             </div>
 
             <div className="absolute left-4 right-4 bottom-4 md:left-6 md:right-6 md:bottom-5 flex items-end justify-between gap-4 pointer-events-none">
@@ -553,7 +735,7 @@ function ProjectCard({ project, index }) {
               </div>
 
               <span className="rounded-full border border-white/25 bg-black/25 backdrop-blur-md px-3 py-2 text-[9px] md:text-[10px] uppercase tracking-[0.17em] text-white/85">
-                {active ? 'Playing preview' : 'View project'}
+                {active ? t.playingPreview : t.viewProject}
               </span>
             </div>
           </div>
@@ -562,7 +744,7 @@ function ProjectCard({ project, index }) {
   );
 }
 
-function ProjectDetail({ project, projects }) {
+function ProjectDetail({ project, projects, t }) {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [project?.id]);
@@ -576,9 +758,9 @@ function ProjectDetail({ project, projects }) {
           }}
           className="text-xs uppercase tracking-[0.18em] text-white/55 hover:text-white"
         >
-          ← Back to work
+          {t.backToWork}
         </button>
-        <p className="mt-20 text-white/45">Project not found.</p>
+        <p className="mt-20 text-white/45">{t.projectNotFound}</p>
       </div>
     );
   }
@@ -600,7 +782,7 @@ function ProjectDetail({ project, projects }) {
           }}
           className="text-[10px] md:text-xs uppercase tracking-[0.18em] text-white/45 hover:text-white transition-colors"
         >
-          ← Selected work
+          {t.selectedWorkBack}
         </button>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 mt-10 md:mt-16 mb-10 md:mb-14 items-end">
@@ -645,11 +827,11 @@ function ProjectDetail({ project, projects }) {
       <div className="px-5 md:px-10 lg:px-14 max-w-[1600px] mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 py-16 md:py-22 border-b border-white/10">
           <div className="lg:col-span-3">
-            <SectionLabel index="01">Project</SectionLabel>
+            <SectionLabel index="01">{t.project}</SectionLabel>
           </div>
           <div className="lg:col-span-8 lg:col-start-5">
             <p className="text-xl md:text-3xl lg:text-4xl leading-[1.14] tracking-[-0.035em] text-white/90">
-              {project.description || 'Project details coming soon.'}
+              {project.description || t.projectDetailsSoon}
             </p>
           </div>
         </div>
@@ -658,13 +840,13 @@ function ProjectDetail({ project, projects }) {
           <section className="red-divider py-16 md:py-22 border-b border-white/10">
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12 md:mb-16">
               <div>
-                <SectionLabel index="02">Selected films</SectionLabel>
+                <SectionLabel index="02">{t.selectedFilms}</SectionLabel>
                 <h2 className="mt-5 text-3xl md:text-5xl lg:text-6xl tracking-[-0.05em] uppercase font-semibold leading-[0.9]">
-                  More from<br />this project.
+                  {String(t.moreFromProject).split('\n').map((line, i, arr) => (<React.Fragment key={line}>{line}{i < arr.length - 1 && <br />}</React.Fragment>))}
                 </h2>
               </div>
               <p className="text-xs uppercase tracking-[0.16em] text-white/35">
-                {String(additionalVideos.length).padStart(2, '0')} additional film{additionalVideos.length > 1 ? 's' : ''}
+                {String(additionalVideos.length).padStart(2, '0')} {additionalVideos.length > 1 ? t.additionalFilms : t.additionalFilm}
               </p>
             </div>
 
@@ -720,7 +902,7 @@ function ProjectDetail({ project, projects }) {
 
         {project.gallery.length > 0 && (
           <section className="red-divider py-16 md:py-22 border-b border-white/10">
-            <SectionLabel index={additionalVideos.length > 0 ? '03' : '02'}>Frames</SectionLabel>
+            <SectionLabel index={additionalVideos.length > 0 ? '03' : '02'}>{t.frames}</SectionLabel>
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mt-10">
               {project.gallery.map((image, index) => (
                 <div
@@ -749,7 +931,7 @@ function ProjectDetail({ project, projects }) {
         {nextProject && (
           <section className="pt-24 md:pt-36">
             <p className="text-[10px] md:text-xs uppercase tracking-[0.18em] text-white/35 mb-7">
-              Next project
+              {t.nextProject}
             </p>
             <a href={`#work/${nextProject.slug}`} className="group flex items-end justify-between gap-6 border-b border-white/10 hover:border-[#e10600]/55 pb-8 transition-colors duration-500">
               <h2 className="text-[clamp(2.7rem,8vw,8rem)] leading-[0.82] tracking-[-0.06em] uppercase font-semibold group-hover:text-[var(--accent)] transition-colors">
@@ -775,7 +957,21 @@ export default function Portfolio() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [showreelPlaying, setShowreelPlaying] = useState(false);
+  const [language, setLanguage] = useState(() => {
+    try {
+      return localStorage.getItem('yn-language') || 'it';
+    } catch {
+      return 'it';
+    }
+  });
   const scrollProgressRef = useRef(null);
+
+  useEffect(() => {
+    document.documentElement.lang = language;
+    try {
+      localStorage.setItem('yn-language', language);
+    } catch {}
+  }, [language]);
 
   useEffect(() => {
     let active = true;
@@ -971,11 +1167,20 @@ export default function Portfolio() {
           hero_location_line,
           hero_primary_cta,
           hero_secondary_cta,
+          hero_title_it,
+          hero_roles_it,
+          hero_location_line_it,
+          hero_primary_cta_it,
+          hero_secondary_cta_it,
           about_heading,
           about_body,
+          about_heading_it,
+          about_body_it,
           about_image_url,
           contact_heading,
           contact_description,
+          contact_heading_it,
+          contact_description_it,
           contact_email,
           whatsapp_number,
           instagram_url,
@@ -1076,7 +1281,37 @@ export default function Portfolio() {
     };
   }, [mobileMenuOpen]);
 
-  const showreelPlaybackId = muxPlaybackId(siteSettings.showreel_url);
+  const t = UI_COPY[language] || UI_COPY.it;
+
+  const localizedSettings = useMemo(() => {
+    if (language !== 'it') return siteSettings;
+
+    return {
+      ...siteSettings,
+      hero_title: siteSettings.hero_title_it || IT_SETTINGS_DEFAULTS.hero_title,
+      hero_roles: siteSettings.hero_roles_it || IT_SETTINGS_DEFAULTS.hero_roles,
+      hero_location_line:
+        siteSettings.hero_location_line_it || IT_SETTINGS_DEFAULTS.hero_location_line,
+      hero_primary_cta:
+        siteSettings.hero_primary_cta_it || IT_SETTINGS_DEFAULTS.hero_primary_cta,
+      hero_secondary_cta:
+        siteSettings.hero_secondary_cta_it || IT_SETTINGS_DEFAULTS.hero_secondary_cta,
+      about_heading:
+        siteSettings.about_heading_it || IT_SETTINGS_DEFAULTS.about_heading,
+      about_body: siteSettings.about_body_it || IT_SETTINGS_DEFAULTS.about_body,
+      contact_heading:
+        siteSettings.contact_heading_it || IT_SETTINGS_DEFAULTS.contact_heading,
+      contact_description:
+        siteSettings.contact_description_it || IT_SETTINGS_DEFAULTS.contact_description,
+    };
+  }, [siteSettings, language]);
+
+  const displayProjects = useMemo(
+    () => projects.map((project) => localizeProject(project, language)),
+    [projects, language],
+  );
+
+  const showreelPlaybackId = muxPlaybackId(localizedSettings.showreel_url);
   const showreelPoster = showreelPlaybackId
     ? `https://image.mux.com/${showreelPlaybackId}/thumbnail.jpg?width=1800&fit_mode=smartcrop`
     : FALLBACK_PROJECT_IMAGE;
@@ -1086,11 +1321,11 @@ export default function Portfolio() {
 
   const aboutParagraphs = useMemo(
     () =>
-      String(siteSettings.about_body || '')
+      String(localizedSettings.about_body || '')
         .split(/\n\s*\n/)
         .map((paragraph) => paragraph.trim())
         .filter(Boolean),
-    [siteSettings.about_body],
+    [localizedSettings.about_body],
   );
 
   const renderMultilineTitle = (value) =>
@@ -1131,7 +1366,7 @@ export default function Portfolio() {
     }
   }
 
-  const selectedProject = projects.find((project) => project.slug === route.slug);
+  const selectedProject = displayProjects.find((project) => project.slug === route.slug);
 
   return (
     <div
@@ -1426,8 +1661,13 @@ export default function Portfolio() {
               <span className="w-8 h-8 rounded-full bg-[var(--accent)] text-white flex items-center justify-center text-[10px] font-bold tracking-[-0.03em] shadow-[0_0_24px_rgba(225,6,0,.22)]">
                 {PORTFOLIO_DATA.shortName}
               </span>
-              <span className="hidden sm:block text-[10px] md:text-xs uppercase tracking-[0.17em] text-white/85 truncate">
-                {PORTFOLIO_DATA.name}
+              <span className="hidden sm:flex flex-col leading-none min-w-0">
+                <span className="text-[10px] md:text-xs uppercase tracking-[0.17em] text-white/95 truncate font-semibold">
+                  {PORTFOLIO_DATA.brand}
+                </span>
+                <span className="mt-1 text-[7px] md:text-[8px] uppercase tracking-[0.15em] text-white/35 truncate">
+                  {PORTFOLIO_DATA.name}
+                </span>
               </span>
             </a>
 
@@ -1438,24 +1678,27 @@ export default function Portfolio() {
                   onClick={() => scrollToSection(item)}
                   className="px-4 py-2 text-[10px] uppercase tracking-[0.16em] text-white/55 hover:text-white transition-colors rounded-full"
                 >
-                  {item}
+                  {t.nav[item]}
                 </button>
               ))}
             </div>
 
             <div className="flex items-center gap-2">
+              <div className="hidden sm:block">
+                <LanguageSwitch language={language} onChange={setLanguage} compact />
+              </div>
               <button
                 onClick={handlePrimaryCta}
                 className="cta-red hidden sm:inline-flex items-center gap-2 rounded-full px-4 md:px-5 py-2.5 text-[9px] md:text-[10px] uppercase tracking-[0.15em] font-semibold transition-all duration-300"
               >
-                Contact
+                {t.nav.contact}
                 <ArrowUpRight size={13} />
               </button>
 
               <button
                 className="md:hidden w-10 h-10 rounded-full border border-white/10 bg-white/[0.04] flex items-center justify-center"
                 onClick={() => setMobileMenuOpen((open) => !open)}
-                aria-label="Toggle menu"
+                aria-label={language === 'it' ? 'Apri menu' : 'Ouvrir le menu'}
               >
                 {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
               </button>
@@ -1472,17 +1715,20 @@ export default function Portfolio() {
                   onClick={() => scrollToSection(item)}
                   className="flex items-center justify-between border-b border-white/10 py-5 text-left text-4xl uppercase tracking-[-0.04em] hover:text-[var(--accent)] hover:border-[#e10600]/45 transition-colors"
                 >
-                  <span>{item}</span>
+                  <span>{t.nav[item]}</span>
                   <span className="text-xs text-white/30">0{index + 1}</span>
                 </button>
               ))}
             </div>
 
-            <div className="flex gap-5 text-white/50">
+            <div className="space-y-6">
+              <LanguageSwitch language={language} onChange={setLanguage} compact />
+              <div className="flex gap-5 text-white/50">
               <a href={siteSettings.instagram_url} target="_blank" rel="noreferrer"><FaInstagram /></a>
               <a href={siteSettings.tiktok_url} target="_blank" rel="noreferrer"><FaTiktok /></a>
               <a href={siteSettings.linkedin_url} target="_blank" rel="noreferrer"><FaLinkedinIn /></a>
               {whatsappHref && <a href={whatsappHref} target="_blank" rel="noreferrer"><FaWhatsapp /></a>}
+              </div>
             </div>
           </div>
         )}
@@ -1542,20 +1788,20 @@ export default function Portfolio() {
               <div className="flex flex-wrap items-center justify-between gap-4 mb-6 md:mb-8 hero-in hero-delay-1">
                 <div className="flex items-center gap-3 text-[9px] md:text-[10px] uppercase tracking-[0.18em] text-white/65">
                   <span className="w-2 h-2 rounded-full bg-[var(--accent)] pulse-dot" />
-                  <span>Available for selected projects</span>
+                  <span>{t.available}</span>
                 </div>
                 <span className="text-[9px] md:text-[10px] uppercase tracking-[0.18em] text-white/45">
-                  {siteSettings.hero_location_line}
+                  {localizedSettings.hero_location_line}
                 </span>
               </div>
 
               <h1 className="hero-in text-[clamp(3.35rem,8.6vw,8.7rem)] leading-[0.79] tracking-[-0.075em] font-semibold uppercase max-w-[1450px]">
-                {renderMultilineTitle(siteSettings.hero_title)}
+                {renderMultilineTitle(localizedSettings.hero_title)}
               </h1>
 
               <div className="hero-in hero-delay-2 mt-5 md:mt-7 grid grid-cols-1 md:grid-cols-12 gap-7 md:items-end">
                 <p className="md:col-span-5 lg:col-span-4 text-xs md:text-sm uppercase tracking-[0.16em] text-white/65 leading-relaxed">
-                  {siteSettings.hero_roles}
+                  {localizedSettings.hero_roles}
                 </p>
 
                 <div className="md:col-span-7 lg:col-span-5 lg:col-start-8 flex flex-col sm:flex-row gap-3 md:justify-end">
@@ -1563,23 +1809,23 @@ export default function Portfolio() {
                     onClick={handlePrimaryCta}
                     className="cta-red min-h-12 px-5 rounded-full flex items-center justify-between gap-6 text-[10px] uppercase tracking-[0.16em] font-semibold transition-all duration-300"
                   >
-                    <span>{siteSettings.hero_primary_cta}</span>
+                    <span>{localizedSettings.hero_primary_cta}</span>
                     <ArrowUpRight size={16} />
                   </button>
                   <button
                     onClick={() => scrollToSection('work')}
                     className="min-h-12 px-5 rounded-full border border-[#e10600]/55 bg-black/30 backdrop-blur-md flex items-center justify-between gap-6 text-[10px] uppercase tracking-[0.16em] hover:border-[#e10600] hover:bg-[#e10600]/10 transition-all duration-300"
                   >
-                    <span>{siteSettings.hero_secondary_cta}</span>
+                    <span>{localizedSettings.hero_secondary_cta}</span>
                     <ArrowRight size={16} />
                   </button>
                 </div>
               </div>
 
               <div className="red-divider hero-in hero-delay-3 mt-7 md:mt-9 border-t border-white/15 pt-5 flex items-center justify-between text-[9px] md:text-[10px] uppercase tracking-[0.18em] text-white/35">
-                <span>Videomaker / Editor / Content Creator</span>
+                <span>{t.heroFooter}</span>
                 <button onClick={() => scrollToSection('work')} className="flex items-center gap-2 hover:text-white transition-colors">
-                  Scroll to work <span>↓</span>
+                  {t.scrollWork} <span>↓</span>
                 </button>
               </div>
             </div>
@@ -1589,43 +1835,43 @@ export default function Portfolio() {
             <div className="max-w-[1600px] mx-auto">
               <Reveal className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end mb-10 md:mb-14">
                 <div className="lg:col-span-8">
-                  <SectionLabel index="01">Selected work</SectionLabel>
+                  <SectionLabel index="01">{t.selectedWork}</SectionLabel>
                   <h2 className="mt-5 text-[clamp(2.5rem,5.8vw,5.7rem)] leading-[0.86] tracking-[-0.065em] font-semibold uppercase">
-                    Films first.<br />Everything else second.
+                    {String(t.selectedWorkTitle).split('\n').map((line, i, arr) => (<React.Fragment key={line}>{line}{i < arr.length - 1 && <br />}</React.Fragment>))}
                   </h2>
                 </div>
                 <div className="lg:col-span-3 lg:col-start-10 lg:pb-2">
                   <p className="text-sm md:text-base text-white/45 leading-relaxed">
-                    A selection of event films, campaigns, social content and visual stories.
+                    {t.selectedWorkDescription}
                   </p>
                 </div>
               </Reveal>
 
               {projectsLoading && projects.length === 0 ? (
                 <div className="border-y border-white/10 py-16 text-center text-sm text-white/35">
-                  Chargement des travaux sélectionnés…
+                  {t.loadingWork}
                 </div>
               ) : projectsError && projects.length === 0 ? (
                 <div className="border-y border-white/10 py-16 text-center">
                   <p className="text-sm text-white/40">
-                    Les projets sont momentanément indisponibles.
+                    {t.unavailableWork}
                   </p>
                   <button
                     type="button"
                     onClick={() => window.location.reload()}
                     className="mt-5 rounded-full border border-[#e10600]/45 px-5 py-3 text-[10px] uppercase tracking-[0.16em] text-white/75 hover:bg-[var(--accent)] hover:text-white transition-colors"
                   >
-                    Réessayer
+                    {t.retry}
                   </button>
                 </div>
               ) : projects.length === 0 ? (
                 <div className="border-y border-white/10 py-24 text-center text-sm text-white/35">
-                  Selected work coming soon.
+                  {t.comingSoon}
                 </div>
               ) : (
                 <div className="space-y-12 md:space-y-18">
-                  {projects.map((project, index) => (
-                    <ProjectCard key={project.id} project={project} index={index} />
+                  {displayProjects.map((project, index) => (
+                    <ProjectCard key={project.id} project={project} index={index} t={t} />
                   ))}
                 </div>
               )}
@@ -1651,7 +1897,7 @@ export default function Portfolio() {
                     type="button"
                     onClick={() => showreelPlaybackId && setShowreelPlaying(true)}
                     className="absolute inset-0 w-full h-full group"
-                    aria-label="Play showreel"
+                    aria-label={t.playShowreel}
                   >
                     <img
                       src={showreelPoster}
@@ -1662,9 +1908,9 @@ export default function Portfolio() {
 
                     <div className="absolute inset-x-5 md:inset-x-10 bottom-6 md:bottom-9 flex items-end justify-between gap-4 text-left">
                       <div>
-                        <p className="text-[9px] md:text-[10px] uppercase tracking-[0.18em] text-white/50 mb-3">Showreel</p>
+                        <p className="text-[9px] md:text-[10px] uppercase tracking-[0.18em] text-white/50 mb-3">{t.showreel}</p>
                         <h2 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl uppercase leading-[0.82] tracking-[-0.065em] font-semibold">
-                          60 seconds<br />of motion.
+                          {String(t.showreelTitle).split('\n').map((line, i, arr) => (<React.Fragment key={line}>{line}{i < arr.length - 1 && <br />}</React.Fragment>))}
                         </h2>
                       </div>
 
@@ -1682,33 +1928,34 @@ export default function Portfolio() {
             <div className="max-w-[1600px] mx-auto">
               <Reveal className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-16 md:mb-24">
                 <div className="lg:col-span-7">
-                  <SectionLabel index="02">What I do</SectionLabel>
+                  <SectionLabel index="02">{t.whatIDo}</SectionLabel>
                   <h2 className="mt-5 text-4xl md:text-6xl lg:text-6xl uppercase tracking-[-0.06em] leading-[0.84] font-semibold">
-                    Built around<br />the moving image.
+                    {String(t.servicesTitle).split('\n').map((line, i, arr) => (<React.Fragment key={line}>{line}{i < arr.length - 1 && <br />}</React.Fragment>))}
                   </h2>
                 </div>
                 <p className="lg:col-span-3 lg:col-start-10 lg:self-end text-sm md:text-base text-white/45 leading-relaxed">
-                  Video is the core. Photography and design support the story when the project needs them.
+                  {t.servicesDescription}
                 </p>
               </Reveal>
 
               <div className="red-rule border-t border-white/10 pt-1">
-                {SERVICES.map((service, index) => {
-                  const Icon = service.icon;
+                {t.services.map(([number, title, description], index) => {
+                  const serviceIcons = [Video, Scissors, Sparkles, Camera];
+                  const Icon = serviceIcons[index] || Video;
                   return (
-                    <Reveal key={service.number} delay={index * 80}>
+                    <Reveal key={number} delay={index * 80}>
                       <div className="group grid grid-cols-[44px_1fr] md:grid-cols-12 gap-5 md:gap-8 border-b border-white/10 py-5 md:py-7 items-start">
                         <span className="md:col-span-1 text-[10px] uppercase tracking-[0.18em] text-white/30 pt-1">
-                          {service.number}
+                          {number}
                         </span>
                         <div className="md:col-span-4 flex items-center gap-4">
                           <Icon size={19} className="text-white/35 group-hover:text-[var(--accent)] transition-colors" />
                           <h3 className="text-lg md:text-2xl uppercase tracking-[-0.025em]">
-                            {service.title}
+                            {title}
                           </h3>
                         </div>
                         <p className="col-start-2 md:col-span-5 md:col-start-8 text-sm md:text-base text-white/45 leading-relaxed max-w-xl">
-                          {service.description}
+                          {description}
                         </p>
                       </div>
                     </Reveal>
@@ -1722,11 +1969,11 @@ export default function Portfolio() {
             <div className="max-w-[1600px] mx-auto">
               <Reveal className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
                 <div className="lg:col-span-5">
-                  <SectionLabel index="03">About</SectionLabel>
+                  <SectionLabel index="03">{t.about}</SectionLabel>
                   <div className="signal-frame mt-7 aspect-[4/5] max-w-[430px] rounded-[1.15rem] overflow-hidden bg-white/[0.03] sticky top-28">
                     <img
                       src={siteSettings.about_image_url || 'https://images.unsplash.com/photo-1552168324-d612d77725e3?q=85&w=1600&auto=format&fit=crop'}
-                      alt="Yaël Noukimi"
+                      alt={t.photoAlt}
                       className="w-full h-full object-cover"
                       loading="lazy"
                     />
@@ -1735,7 +1982,7 @@ export default function Portfolio() {
 
                 <div className="lg:col-span-6 lg:col-start-7 lg:pt-20">
                   <h2 className="text-[clamp(2rem,4.4vw,4.3rem)] leading-[1.0] tracking-[-0.055em] font-medium">
-                    {siteSettings.about_heading}
+                    {localizedSettings.about_heading}
                   </h2>
 
                   <div className="mt-9 md:mt-12 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10 text-white/50 leading-relaxed text-sm md:text-base">
@@ -1745,7 +1992,7 @@ export default function Portfolio() {
                   </div>
 
                   <div className="mt-16 md:mt-10 border-t border-white/10">
-                    {PROCESS.map(([number, title, description]) => (
+                    {t.process.map(([number, title, description]) => (
                       <div key={number} className="grid grid-cols-[38px_1fr] md:grid-cols-[60px_180px_1fr] gap-4 border-b border-white/10 py-5 items-start">
                         <span className="text-[10px] uppercase tracking-[0.16em] text-[var(--accent)]">{number}</span>
                         <h3 className="text-sm uppercase tracking-[0.08em]">{title}</h3>
@@ -1761,18 +2008,18 @@ export default function Portfolio() {
           <section id="contact" className="red-rule red-rule-right bg-[#050505] text-white px-5 md:px-10 lg:px-14 pt-18 md:pt-24 pb-8">
             <div className="max-w-[1600px] mx-auto">
               <Reveal>
-                <SectionLabel index="04">Contact</SectionLabel>
+                <SectionLabel index="04">{t.contact}</SectionLabel>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mt-8 md:mt-12 items-end">
                   <div className="lg:col-span-9">
                     <h2 className="text-[clamp(3rem,7.8vw,7.5rem)] leading-[0.8] tracking-[-0.075em] uppercase font-semibold">
-                      {renderMultilineTitle(siteSettings.contact_heading)}
+                      {renderMultilineTitle(localizedSettings.contact_heading)}
                     </h2>
                   </div>
 
                   <div className="lg:col-span-3 lg:pb-2">
                     <p className="text-white/75 leading-relaxed text-sm md:text-base mb-7">
-                      {siteSettings.contact_description}
+                      {localizedSettings.contact_description}
                     </p>
 
                     <div className="space-y-3">
@@ -1801,8 +2048,8 @@ export default function Portfolio() {
 
                 <div className="mt-14 md:mt-20 border-t border-[#e10600]/35 pt-7 grid grid-cols-1 md:grid-cols-3 gap-6 text-[10px] uppercase tracking-[0.16em] text-white/70">
                   <div>
-                    <p className="text-white/45 mb-2">Based</p>
-                    <p>{siteSettings.hero_location_line}</p>
+                    <p className="text-white/45 mb-2">{t.based}</p>
+                    <p>{localizedSettings.hero_location_line}</p>
                   </div>
                   <div>
                     <p className="text-white/45 mb-2">Email</p>
@@ -1818,7 +2065,7 @@ export default function Portfolio() {
 
                 <div className="mt-8 pt-6 border-t border-[#e10600]/25 flex flex-col sm:flex-row justify-between gap-2 text-[9px] uppercase tracking-[0.15em] text-white/50">
                   <p>© {new Date().getFullYear()} {PORTFOLIO_DATA.name}</p>
-                  <p>Videomaker · Editor · Content Creator</p>
+                  <p>{t.footerRole}</p>
                 </div>
               </Reveal>
             </div>
@@ -1826,12 +2073,12 @@ export default function Portfolio() {
         </main>
       ) : (
         <main>
-          <ProjectDetail project={selectedProject} projects={projects} />
+          <ProjectDetail project={selectedProject} projects={displayProjects} t={t} />
           <section id="contact" className="red-rule red-rule-right bg-[#050505] text-white px-5 md:px-10 lg:px-14 py-20">
             <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row md:items-end justify-between gap-8">
               <div>
-                <p className="text-[10px] uppercase tracking-[0.18em] text-white/55 mb-4">Have a project?</p>
-                <h2 className="text-5xl md:text-7xl uppercase tracking-[-0.055em] leading-[0.85] font-semibold">Let's talk.</h2>
+                <p className="text-[10px] uppercase tracking-[0.18em] text-white/55 mb-4">{t.haveProject}</p>
+                <h2 className="text-5xl md:text-7xl uppercase tracking-[-0.055em] leading-[0.85] font-semibold">{t.letsTalk}</h2>
               </div>
               <div className="flex flex-wrap gap-3">
                 {whatsappHref && (
