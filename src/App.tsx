@@ -249,23 +249,33 @@ function localizeProject(project, language) {
 function LanguageSwitch({ language, onChange, compact = false }) {
   return (
     <div
-      className={`flex items-center rounded-full border border-white/10 bg-white/[0.035] p-1 ${
+      className={`notranslate flex items-center rounded-full border border-white/10 bg-white/[0.035] p-1 ${
         compact ? 'w-fit' : ''
       }`}
       aria-label="Language"
+      translate="no"
+      data-no-translation
     >
-      {['it', 'fr'].map((code) => (
+      {[
+        ['it', 'IT'],
+        ['fr', 'FR'],
+      ].map(([code, label]) => (
         <button
           key={code}
           type="button"
           onClick={() => onChange(code)}
-          className={`rounded-full px-3 py-2 text-[9px] uppercase tracking-[0.16em] transition-colors ${
+          className={`notranslate rounded-full ${
+            compact ? 'px-2.5 py-2 text-[8px]' : 'px-3 py-2 text-[9px]'
+          } uppercase tracking-[0.16em] transition-colors ${
             language === code
               ? 'bg-[var(--accent)] text-white'
               : 'text-white/45 hover:text-white'
           }`}
+          translate="no"
+          lang={code}
+          aria-label={code === 'it' ? 'Italiano' : 'Français'}
         >
-          {code}
+          {label}
         </button>
       ))}
     </div>
@@ -2049,6 +2059,14 @@ export default function Portfolio() {
                 {t.nav.contact}
                 <ArrowUpRight size={13} />
               </button>
+
+              <div className="md:hidden">
+                <LanguageSwitch
+                  language={language}
+                  onChange={setLanguage}
+                  compact
+                />
+              </div>
 
               <button
                 className="md:hidden w-10 h-10 rounded-full border border-white/10 bg-white/[0.04] flex items-center justify-center"
