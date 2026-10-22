@@ -1,4 +1,5 @@
 // @ts-nocheck
+import EventPlanner from './EventPlanner';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight,
@@ -1836,11 +1837,7 @@ export default function Portfolio() {
   }
 
   function handlePrimaryCta() {
-    if (whatsappHref) {
-      window.open(whatsappHref, '_blank', 'noopener,noreferrer');
-    } else {
-      scrollToSection('contact');
-    }
+    scrollToSection('imagine-event');
   }
 
   const selectedProject = displayProjects.find((project) => project.slug === route.slug);
@@ -2545,6 +2542,8 @@ export default function Portfolio() {
               </Reveal>
             </div>
           </section>
+
+          <EventPlanner language={language} projects={displayProjects} whatsappNumber={siteSettings.whatsapp_number} />
 
           <section id="contact" className="red-rule red-rule-right bg-[#050505] text-white px-5 md:px-10 lg:px-14 pt-18 md:pt-24 pb-8">
             <div className="max-w-[1600px] mx-auto">
