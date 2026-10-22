@@ -93,9 +93,24 @@ const UI_COPY = {
     selectedWorkTitle: 'La vidéo d’abord.\nLe reste ensuite.',
     selectedWorkDescription:
       'Une sélection de films événementiels, campagnes, contenus sociaux et histoires visuelles.',
-    loadingWork: '{t.loadingWork}',
-    unavailableWork: '{t.unavailableWork}',
-    retry: '{t.retry}',
+    creativeDigital: 'Creative & Digital',
+    creativeTitle: 'Au-delà du film.\nUn univers complet.',
+    creativeDescription:
+      'Sites web, campagnes visuelles, affiches et identités digitales qui prolongent le projet au-delà de la vidéo.',
+    creativeEmpty: 'Les projets design et digitaux arrivent bientôt.',
+    website: 'Site web',
+    visualDesign: 'Visual Design',
+    campaign: 'Campagne',
+    photography: 'Photographie',
+    visitSite: 'Visiter le site',
+    viewCaseStudy: 'Voir le projet',
+    technologies: 'Technologies',
+    digitalExperience: 'Expérience digitale',
+    campaignVisuals: 'Visuels de campagne',
+    designGallery: 'Design sélectionné',
+    loadingWork: 'Chargement des travaux sélectionnés…',
+    unavailableWork: 'Les projets sont momentanément indisponibles.',
+    retry: 'Réessayer',
     comingSoon: 'De nouveaux projets arrivent bientôt.',
     showreel: 'Showreel',
     showreelTitle: '60 secondes\nen mouvement.',
@@ -151,6 +166,21 @@ const UI_COPY = {
     selectedWorkTitle: 'Prima i film.\nTutto il resto dopo.',
     selectedWorkDescription:
       'Una selezione di film di eventi, campagne, contenuti social e storie visive.',
+    creativeDigital: 'Design & Digital',
+    creativeTitle: 'Oltre il film.\nUn universo completo.',
+    creativeDescription:
+      'Siti web, campagne visive, poster e identità digitali che estendono il progetto oltre il video.',
+    creativeEmpty: 'I progetti design e digitali arriveranno presto.',
+    website: 'Sito web',
+    visualDesign: 'Visual Design',
+    campaign: 'Campagna',
+    photography: 'Fotografia',
+    visitSite: 'Visita il sito',
+    viewCaseStudy: 'Vedi progetto',
+    technologies: 'Tecnologie',
+    digitalExperience: 'Esperienza digitale',
+    campaignVisuals: 'Visual di campagna',
+    designGallery: 'Design selezionato',
     loadingWork: 'Caricamento dei lavori selezionati…',
     unavailableWork: 'I progetti sono momentaneamente non disponibili.',
     retry: 'Riprova',
@@ -334,6 +364,9 @@ function normalizeProject(project) {
     title: project.title,
     category: project.category ?? '',
     category_it: project.category_it ?? '',
+    project_type: project.project_type || 'film',
+    website_url: project.website_url ?? '',
+    technologies: Array.isArray(project.technologies) ? project.technologies : [],
     year: project.year ? String(project.year) : '',
     location: project.location ?? '',
     thumbnail: project.thumbnail_url || FALLBACK_PROJECT_IMAGE,
@@ -766,6 +799,182 @@ function ProjectCard({ project, index, t }) {
   );
 }
 
+
+function projectTypeLabel(project, t) {
+  switch (project.project_type) {
+    case 'website':
+      return t.website;
+    case 'visual_design':
+      return t.visualDesign;
+    case 'campaign':
+      return t.campaign;
+    case 'photography':
+      return t.photography;
+    default:
+      return project.category || t.project;
+  }
+}
+
+function CreativeCard({ project, index, t }) {
+  const type = project.project_type || 'film';
+  const typeLabel = projectTypeLabel(project, t);
+  const gallery = Array.isArray(project.gallery) ? project.gallery : [];
+  const technologies = Array.isArray(project.technologies)
+    ? project.technologies.slice(0, 4)
+    : [];
+
+  const websiteHost = (() => {
+    try {
+      return project.website_url
+        ? new URL(project.website_url).hostname.replace(/^www\./, '')
+        : '';
+    } catch {
+      return '';
+    }
+  })();
+
+  return (
+    <article className="group border-t border-white/10 hover:border-[#e10600]/45 transition-colors duration-500 pt-5 md:pt-7">
+      <div className="flex items-start justify-between gap-5 mb-5">
+        <div className="flex gap-5 md:gap-7 min-w-0">
+          <span className="text-[10px] md:text-xs text-white/30 tracking-[0.18em] pt-1">
+            {String(index + 1).padStart(2, '0')}
+          </span>
+          <div className="min-w-0">
+            <p className="text-[9px] md:text-[10px] uppercase tracking-[0.18em] text-[var(--accent)] mb-2">
+              {typeLabel}
+            </p>
+            <h3 className="text-2xl md:text-4xl lg:text-5xl uppercase tracking-[-0.045em] leading-[0.95] font-semibold">
+              {project.title}
+            </h3>
+            <div className="mt-3 flex flex-wrap gap-2 text-[9px] uppercase tracking-[0.14em] text-white/35">
+              {project.year && <span>{project.year}</span>}
+              {project.location && <span>· {project.location}</span>}
+              {technologies.map((technology) => (
+                <span
+                  key={technology}
+                  className="rounded-full border border-white/10 px-2.5 py-1 text-white/45"
+                >
+                  {technology}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <a
+          href={`#work/${project.slug}`}
+          className="shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-full border border-white/15 flex items-center justify-center group-hover:bg-[var(--accent)] group-hover:border-[var(--accent)] group-hover:rotate-45 transition-all duration-500"
+          aria-label={t.viewCaseStudy}
+        >
+          <ArrowUpRight size={18} />
+        </a>
+      </div>
+
+      {type === 'website' ? (
+        <div className="signal-frame overflow-hidden rounded-[1.1rem] md:rounded-[1.6rem] bg-[#0b0b0b]">
+          <div className="h-10 md:h-12 border-b border-white/10 flex items-center gap-3 px-4 md:px-5 bg-[#101010]">
+            <div className="flex gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-[var(--accent)]/75" />
+              <span className="w-2 h-2 rounded-full bg-white/15" />
+              <span className="w-2 h-2 rounded-full bg-white/10" />
+            </div>
+            <div className="flex-1 max-w-lg rounded-full border border-white/8 bg-black/25 px-4 py-1.5 text-[9px] uppercase tracking-[0.12em] text-white/30 truncate">
+              {websiteHost || project.title}
+            </div>
+          </div>
+
+          <a href={`#work/${project.slug}`} className="block aspect-[16/10] overflow-hidden bg-[#111]">
+            <img
+              src={project.thumbnail}
+              alt={project.title}
+              className="w-full h-full object-cover object-top group-hover:scale-[1.02] transition-transform duration-700"
+              loading="lazy"
+              onError={(event) => {
+                event.currentTarget.src = FALLBACK_PROJECT_IMAGE;
+              }}
+            />
+          </a>
+        </div>
+      ) : type === 'visual_design' ? (
+        <a
+          href={`#work/${project.slug}`}
+          className="signal-frame grid grid-cols-12 gap-2 md:gap-4 p-2 md:p-4 rounded-[1.1rem] md:rounded-[1.6rem] bg-[#0b0b0b] overflow-hidden"
+        >
+          <div className="col-span-8 aspect-[4/5] bg-[#111] overflow-hidden rounded-[.7rem] md:rounded-[1rem]">
+            <img
+              src={project.thumbnail}
+              alt={project.title}
+              className="w-full h-full object-contain bg-[#080808] group-hover:scale-[1.015] transition-transform duration-700"
+              loading="lazy"
+            />
+          </div>
+          <div className="col-span-4 grid grid-rows-2 gap-2 md:gap-4">
+            {[gallery[0], gallery[1]].map((image, imageIndex) => (
+              <div
+                key={image || imageIndex}
+                className="min-h-0 bg-[#111] overflow-hidden rounded-[.7rem] md:rounded-[1rem]"
+              >
+                {image ? (
+                  <img
+                    src={image}
+                    alt={`${project.title} ${imageIndex + 2}`}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-[8px] uppercase tracking-[0.16em] text-white/15">
+                    LORIK.NK
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </a>
+      ) : (
+        <a
+          href={`#work/${project.slug}`}
+          className="signal-frame block relative overflow-hidden rounded-[1.1rem] md:rounded-[1.6rem] bg-[#111] aspect-[16/9]"
+        >
+          <img
+            src={project.thumbnail}
+            alt={project.title}
+            className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700"
+            loading="lazy"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/10" />
+          <div className="absolute left-4 right-4 bottom-4 md:left-6 md:right-6 md:bottom-6 flex items-end justify-between gap-4">
+            <p className="text-[9px] md:text-[10px] uppercase tracking-[0.16em] text-white/65">
+              {type === 'campaign' && project.video ? 'Film · Visual · Digital' : typeLabel}
+            </p>
+            <span className="rounded-full border border-white/20 bg-black/30 backdrop-blur-md px-3 py-2 text-[9px] uppercase tracking-[0.16em] text-white/75">
+              {t.viewCaseStudy}
+            </span>
+          </div>
+        </a>
+      )}
+
+      <div className="mt-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <p className="max-w-2xl text-sm text-white/40 leading-relaxed line-clamp-2">
+          {project.description}
+        </p>
+
+        {project.website_url && (
+          <a
+            href={project.website_url}
+            target="_blank"
+            rel="noreferrer"
+            className="shrink-0 inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.16em] text-white/65 hover:text-[var(--accent)] transition-colors"
+          >
+            {t.visitSite}
+            <ArrowUpRight size={13} />
+          </a>
+        )}
+      </div>
+    </article>
+  );
+}
+
 function ProjectDetail({ project, projects, t }) {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
@@ -810,6 +1019,14 @@ function ProjectDetail({ project, projects, t }) {
         ? '1:1'
         : '16:9';
 
+  const projectType = project.project_type || 'film';
+  const isWebsite = projectType === 'website';
+  const isVisualDesign = projectType === 'visual_design';
+  const isCampaign = projectType === 'campaign';
+  const isCreativeProject = ['website', 'visual_design', 'campaign', 'photography'].includes(projectType);
+  const typeLabel = projectTypeLabel(project, t);
+  const technologies = Array.isArray(project.technologies) ? project.technologies : [];
+
   return (
     <div className="bg-[#050505] text-white min-h-screen pt-28 md:pt-36 pb-24">
       <div className="px-5 md:px-10 lg:px-14 max-w-[1600px] mx-auto">
@@ -833,38 +1050,81 @@ function ProjectDetail({ project, projects, t }) {
           </div>
 
           <div className="lg:col-span-3 lg:pb-2 text-sm text-white/50 leading-relaxed">
+            <p className="text-[9px] uppercase tracking-[0.18em] text-[var(--accent)] mb-3">
+              {typeLabel}
+            </p>
             {project.roles.length > 0 && project.roles.slice(0, 5).map((role) => (
               <p key={role}>{role}</p>
             ))}
+            {project.website_url && (
+              <a
+                href={project.website_url}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-5 inline-flex items-center gap-2 rounded-full border border-[#e10600]/45 px-4 py-2.5 text-[9px] uppercase tracking-[0.16em] text-white/75 hover:bg-[var(--accent)] hover:text-white transition-colors"
+              >
+                {t.visitSite}
+                <ArrowUpRight size={12} />
+              </a>
+            )}
           </div>
         </div>
       </div>
 
       <div className="px-3 md:px-8 lg:px-12 max-w-[1500px] mx-auto">
-        <div
-          className={`signal-frame relative bg-black overflow-hidden rounded-[1.15rem] md:rounded-[1.5rem] ${mainFrameClass}`}
-        >
-          {project.video ? (
-            <ProjectVideoPlayer
-              url={project.video}
-              poster={project.thumbnail}
-              title={project.title}
-            />
-          ) : (
-            <img
-              src={project.thumbnail}
-              alt={project.title}
-              className="w-full h-full object-cover"
-              onError={(event) => {
-                event.currentTarget.src = FALLBACK_PROJECT_IMAGE;
-              }}
-            />
-          )}
-
-          <div className="absolute top-4 right-4 md:top-5 md:right-5 z-20 pointer-events-none rounded-full border border-white/15 bg-black/35 backdrop-blur-md px-3 py-2 text-[8px] md:text-[9px] uppercase tracking-[0.16em] text-white/55">
-            {mainOrientationLabel}
+        {isWebsite ? (
+          <div className="signal-frame overflow-hidden rounded-[1.15rem] md:rounded-[1.5rem] bg-[#0b0b0b]">
+            <div className="h-11 md:h-13 border-b border-white/10 flex items-center gap-3 px-4 md:px-6 bg-[#101010]">
+              <div className="flex gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-[var(--accent)]/80" />
+                <span className="w-2 h-2 rounded-full bg-white/15" />
+                <span className="w-2 h-2 rounded-full bg-white/10" />
+              </div>
+              <div className="flex-1 max-w-xl rounded-full border border-white/8 bg-black/25 px-4 py-1.5 text-[9px] uppercase tracking-[0.12em] text-white/30 truncate">
+                {project.website_url || project.title}
+              </div>
+            </div>
+            <div className="aspect-[16/10] bg-[#111] overflow-hidden">
+              <img
+                src={project.thumbnail}
+                alt={project.title}
+                className="w-full h-full object-cover object-top"
+                onError={(event) => {
+                  event.currentTarget.src = FALLBACK_PROJECT_IMAGE;
+                }}
+              />
+            </div>
           </div>
-        </div>
+        ) : (
+          <div
+            className={`signal-frame relative bg-black overflow-hidden rounded-[1.15rem] md:rounded-[1.5rem] ${
+              isVisualDesign ? 'aspect-[4/5] max-w-[620px] mx-auto' : mainFrameClass
+            }`}
+          >
+            {project.video ? (
+              <ProjectVideoPlayer
+                url={project.video}
+                poster={project.thumbnail}
+                title={project.title}
+              />
+            ) : (
+              <img
+                src={project.thumbnail}
+                alt={project.title}
+                className={`w-full h-full ${isVisualDesign ? 'object-contain bg-[#080808]' : 'object-cover'}`}
+                onError={(event) => {
+                  event.currentTarget.src = FALLBACK_PROJECT_IMAGE;
+                }}
+              />
+            )}
+
+            {!isVisualDesign && (
+              <div className="absolute top-4 right-4 md:top-5 md:right-5 z-20 pointer-events-none rounded-full border border-white/15 bg-black/35 backdrop-blur-md px-3 py-2 text-[8px] md:text-[9px] uppercase tracking-[0.16em] text-white/55">
+                {mainOrientationLabel}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="px-5 md:px-10 lg:px-14 max-w-[1600px] mx-auto">
@@ -876,6 +1136,24 @@ function ProjectDetail({ project, projects, t }) {
             <p className="text-xl md:text-3xl lg:text-4xl leading-[1.14] tracking-[-0.035em] text-white/90">
               {project.description || t.projectDetailsSoon}
             </p>
+
+            {technologies.length > 0 && (
+              <div className="mt-8">
+                <p className="text-[9px] uppercase tracking-[0.18em] text-white/30 mb-3">
+                  {t.technologies}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {technologies.map((technology) => (
+                    <span
+                      key={technology}
+                      className="rounded-full border border-white/10 bg-white/[0.025] px-3 py-2 text-[9px] uppercase tracking-[0.13em] text-white/55"
+                    >
+                      {technology}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -945,7 +1223,15 @@ function ProjectDetail({ project, projects, t }) {
 
         {project.gallery.length > 0 && (
           <section className="red-divider py-16 md:py-22 border-b border-white/10">
-            <SectionLabel index={additionalVideos.length > 0 ? '03' : '02'}>{t.frames}</SectionLabel>
+            <SectionLabel index={additionalVideos.length > 0 ? '03' : '02'}>
+              {isWebsite
+                ? t.digitalExperience
+                : isCampaign
+                  ? t.campaignVisuals
+                  : isVisualDesign
+                    ? t.designGallery
+                    : t.frames}
+            </SectionLabel>
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mt-10">
               {project.gallery.map((image, index) => (
                 <div
@@ -1352,6 +1638,28 @@ export default function Portfolio() {
   const displayProjects = useMemo(
     () => projects.map((project) => localizeProject(project, language)),
     [projects, language],
+  );
+
+  const filmProjects = useMemo(
+    () =>
+      displayProjects.filter((project) => {
+        const type = project.project_type || 'film';
+        return ['film', 'campaign'].includes(type) && Boolean(project.video || project.videos?.length);
+      }),
+    [displayProjects],
+  );
+
+  const creativeProjects = useMemo(
+    () =>
+      displayProjects.filter((project) => {
+        const type = project.project_type || 'film';
+        if (['website', 'visual_design', 'photography'].includes(type)) return true;
+        if (type === 'campaign') {
+          return Boolean(project.website_url || project.gallery?.length);
+        }
+        return false;
+      }),
+    [displayProjects],
   );
 
   const showreelPlaybackId = muxPlaybackId(localizedSettings.showreel_url);
@@ -1911,14 +2219,55 @@ export default function Portfolio() {
                     {t.retry}
                   </button>
                 </div>
-              ) : projects.length === 0 ? (
-                <div className="border-y border-white/10 py-24 text-center text-sm text-white/35">
+              ) : filmProjects.length === 0 ? (
+                <div className="border-y border-white/10 py-20 text-center text-sm text-white/35">
                   {t.comingSoon}
                 </div>
               ) : (
                 <div className="space-y-12 md:space-y-18">
-                  {displayProjects.map((project, index) => (
+                  {filmProjects.map((project, index) => (
                     <ProjectCard key={project.id} project={project} index={index} t={t} />
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section id="creative" className="red-rule red-rule-right px-5 md:px-10 lg:px-14 py-18 md:py-24 bg-[#090909]">
+            <div className="max-w-[1600px] mx-auto">
+              <Reveal className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end mb-10 md:mb-14">
+                <div className="lg:col-span-8">
+                  <SectionLabel index="02">{t.creativeDigital}</SectionLabel>
+                  <h2 className="mt-5 text-[clamp(2.4rem,5.4vw,5.4rem)] leading-[0.88] tracking-[-0.06em] font-semibold uppercase">
+                    {String(t.creativeTitle).split('\n').map((line, i, arr) => (
+                      <React.Fragment key={`${line}-${i}`}>
+                        {line}
+                        {i < arr.length - 1 && <br />}
+                      </React.Fragment>
+                    ))}
+                  </h2>
+                </div>
+
+                <div className="lg:col-span-3 lg:col-start-10 lg:pb-2">
+                  <p className="text-sm md:text-base text-white/45 leading-relaxed">
+                    {t.creativeDescription}
+                  </p>
+                </div>
+              </Reveal>
+
+              {creativeProjects.length === 0 ? (
+                <div className="border-y border-white/10 py-16 text-center text-sm text-white/30">
+                  {t.creativeEmpty}
+                </div>
+              ) : (
+                <div className="space-y-12 md:space-y-18">
+                  {creativeProjects.map((project, index) => (
+                    <CreativeCard
+                      key={`creative-${project.id}`}
+                      project={project}
+                      index={index}
+                      t={t}
+                    />
                   ))}
                 </div>
               )}
@@ -1975,7 +2324,7 @@ export default function Portfolio() {
             <div className="max-w-[1600px] mx-auto">
               <Reveal className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-16 md:mb-24">
                 <div className="lg:col-span-7">
-                  <SectionLabel index="02">{t.whatIDo}</SectionLabel>
+                  <SectionLabel index="03">{t.whatIDo}</SectionLabel>
                   <h2 className="mt-5 text-4xl md:text-6xl lg:text-6xl uppercase tracking-[-0.06em] leading-[0.84] font-semibold">
                     {String(t.servicesTitle).split('\n').map((line, i, arr) => (<React.Fragment key={line}>{line}{i < arr.length - 1 && <br />}</React.Fragment>))}
                   </h2>
@@ -2016,7 +2365,7 @@ export default function Portfolio() {
             <div className="max-w-[1600px] mx-auto">
               <Reveal className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
                 <div className="lg:col-span-5">
-                  <SectionLabel index="03">{t.about}</SectionLabel>
+                  <SectionLabel index="04">{t.about}</SectionLabel>
                   <div className="signal-frame mt-7 aspect-[4/5] max-w-[430px] rounded-[1.15rem] overflow-hidden bg-white/[0.03] sticky top-28">
                     <img
                       src={siteSettings.about_image_url || 'https://images.unsplash.com/photo-1552168324-d612d77725e3?q=85&w=1600&auto=format&fit=crop'}
@@ -2055,7 +2404,7 @@ export default function Portfolio() {
           <section id="contact" className="red-rule red-rule-right bg-[#050505] text-white px-5 md:px-10 lg:px-14 pt-18 md:pt-24 pb-8">
             <div className="max-w-[1600px] mx-auto">
               <Reveal>
-                <SectionLabel index="04">{t.contact}</SectionLabel>
+                <SectionLabel index="05">{t.contact}</SectionLabel>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mt-8 md:mt-12 items-end">
                   <div className="lg:col-span-9">

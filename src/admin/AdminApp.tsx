@@ -29,6 +29,9 @@ const EMPTY_PROJECT = {
   slug: '',
   category: '',
   category_it: '',
+  project_type: 'film',
+  website_url: '',
+  technologies: [],
   year: new Date().getFullYear(),
   location: 'Italy',
   description: '',
@@ -1666,6 +1669,10 @@ function ProjectEditor({
     (project?.roles_it ?? []).join('\n'),
   )
 
+  const [technologiesText, setTechnologiesText] = useState(
+    (project?.technologies ?? []).join('\n'),
+  )
+
   const [galleryText, setGalleryText] = useState(
     (project?.gallery ?? []).join('\n'),
   )
@@ -2098,6 +2105,14 @@ function ProjectEditor({
       slug: cleanText(form.slug) || slugify(form.title),
       category: cleanText(form.category) || null,
       category_it: cleanText(form.category_it) || null,
+      project_type: ['film', 'campaign', 'website', 'visual_design', 'photography'].includes(form.project_type)
+        ? form.project_type
+        : 'film',
+      website_url: cleanText(form.website_url) || null,
+      technologies: technologiesText
+        .split('\n')
+        .map((item) => item.trim())
+        .filter(Boolean),
       year: form.year ? Number(form.year) : null,
       location: cleanText(form.location) || null,
       description: cleanText(form.description) || null,
@@ -2233,6 +2248,30 @@ function ProjectEditor({
                   }}
                   className="admin-input"
                   placeholder="destroy-party"
+                />
+              </Field>
+
+              <Field label="Type de projet" hint="Détermine où et comment le projet apparaît sur le portfolio">
+                <select
+                  value={form.project_type ?? 'film'}
+                  onChange={(e) => update('project_type', e.target.value)}
+                  className="admin-input"
+                >
+                  <option value="film">Film / Vidéo</option>
+                  <option value="campaign">Campaign · Vidéo + visuels + digital</option>
+                  <option value="website">Website / Expérience digitale</option>
+                  <option value="visual_design">Visual Design / Flyers / Affiches</option>
+                  <option value="photography">Photographie</option>
+                </select>
+              </Field>
+
+              <Field label="URL du site" hint="Optionnel · surtout pour Website ou Campaign">
+                <input
+                  type="url"
+                  value={form.website_url ?? ''}
+                  onChange={(e) => update('website_url', e.target.value)}
+                  className="admin-input"
+                  placeholder="https://..."
                 />
               </Field>
 
@@ -2660,6 +2699,26 @@ function ProjectEditor({
               </Field>
             </div>
 
+            <Field
+              label="Technologies / outils"
+              hint="Un élément par ligne · ex. React, Supabase, WordPress, Photoshop"
+            >
+              <textarea
+                value={technologiesText}
+                onChange={(e) => setTechnologiesText(e.target.value)}
+                className="admin-input"
+                placeholder={'React\nSupabase\nVercel'}
+              />
+            </Field>
+
+            <div className="border border-white/10 bg-zinc-950/60 p-5 text-xs leading-relaxed text-gray-500">
+              <p className="text-white/75 font-medium mb-2">Comment utiliser les types</p>
+              <p><span className="text-gray-300">Film :</span> projet vidéo classique.</p>
+              <p><span className="text-gray-300">Campaign :</span> vidéo + flyers/photos + éventuellement un site.</p>
+              <p><span className="text-gray-300">Website :</span> mets une capture desktop en couverture, puis les captures mobile dans la galerie.</p>
+              <p><span className="text-gray-300">Visual Design :</span> mets ton meilleur flyer en couverture et les autres créations dans la galerie.</p>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
               <Field
                 label="Rôles FR"
@@ -2686,8 +2745,8 @@ function ProjectEditor({
               </Field>
 
               <Field
-                label="Galerie"
-                hint="Tu peux sélectionner plusieurs images"
+                label="Galerie / visuels"
+                hint="Photos, flyers, affiches, captures desktop/mobile…"
               >
                 <div className="space-y-4">
                   <label className="border border-dashed border-white/15 hover:border-white/35 min-h-32 flex items-center justify-center cursor-pointer transition bg-zinc-950">
