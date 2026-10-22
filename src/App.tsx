@@ -339,6 +339,7 @@ function normalizeProject(project) {
     thumbnail: project.thumbnail_url || FALLBACK_PROJECT_IMAGE,
     previewVideo: project.preview_video_url || '',
     video: featuredVideo?.video_url || '',
+    orientation: featuredVideo?.orientation || 'horizontal',
     videos,
     description: project.description ?? '',
     description_it: project.description_it ?? '',
@@ -675,6 +676,21 @@ function ProjectCard({ project, index, t }) {
 
   const active = touch ? mobileActive : hovered;
   const filmCount = project.videos?.length || (project.video ? 1 : 0);
+  const orientation = project.orientation || 'horizontal';
+
+  const mediaFrameClass =
+    orientation === 'vertical'
+      ? 'aspect-[9/16] w-[72vw] max-w-[340px] md:w-full md:max-w-[440px] mx-auto'
+      : orientation === 'square'
+        ? 'aspect-square w-full max-w-[720px] mx-auto'
+        : 'aspect-video md:aspect-[16/7.6] md:max-h-[620px] w-full';
+
+  const orientationLabel =
+    orientation === 'vertical'
+      ? '9:16'
+      : orientation === 'square'
+        ? '1:1'
+        : '16:9';
 
   return (
     <article
@@ -715,7 +731,9 @@ function ProjectCard({ project, index, t }) {
             </span>
           </div>
 
-          <div className="project-media signal-frame relative overflow-hidden bg-[#111] aspect-video md:aspect-[16/7.6] md:max-h-[620px] rounded-[1.1rem] md:rounded-[1.8rem]">
+          <div
+            className={`project-media signal-frame relative overflow-hidden bg-[#111] rounded-[1.1rem] md:rounded-[1.8rem] ${mediaFrameClass}`}
+          >
             <PreviewMedia project={project} active={active} t={t} />
 
             <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/5 pointer-events-none" />
@@ -723,6 +741,10 @@ function ProjectCard({ project, index, t }) {
             <div className="absolute top-4 left-4 md:top-6 md:left-6 pointer-events-none flex items-center gap-2 text-[8px] md:text-[9px] uppercase tracking-[0.18em] text-white/55">
               <span className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-[var(--accent)] pulse-dot' : 'bg-white/35'}`} />
               <span>{active ? t.previewPlaying : `Film ${String(index + 1).padStart(2, '0')}`}</span>
+            </div>
+
+            <div className="absolute top-4 right-4 md:top-6 md:right-6 pointer-events-none rounded-full border border-white/15 bg-black/30 backdrop-blur-md px-3 py-2 text-[8px] md:text-[9px] uppercase tracking-[0.16em] text-white/55">
+              {orientationLabel}
             </div>
 
             <div className="absolute left-4 right-4 bottom-4 md:left-6 md:right-6 md:bottom-5 flex items-end justify-between gap-4 pointer-events-none">
@@ -773,6 +795,21 @@ function ProjectDetail({ project, projects, t }) {
     (video) => video.video_url !== project.video,
   );
 
+  const mainOrientation = project.orientation || 'horizontal';
+  const mainFrameClass =
+    mainOrientation === 'vertical'
+      ? 'aspect-[9/16] w-[84vw] max-w-[460px] md:w-full md:max-w-[500px] mx-auto'
+      : mainOrientation === 'square'
+        ? 'aspect-square w-full max-w-[760px] mx-auto'
+        : 'aspect-video md:aspect-[16/7.8] md:max-h-[760px] w-full';
+
+  const mainOrientationLabel =
+    mainOrientation === 'vertical'
+      ? '9:16'
+      : mainOrientation === 'square'
+        ? '1:1'
+        : '16:9';
+
   return (
     <div className="bg-[#050505] text-white min-h-screen pt-28 md:pt-36 pb-24">
       <div className="px-5 md:px-10 lg:px-14 max-w-[1600px] mx-auto">
@@ -804,7 +841,9 @@ function ProjectDetail({ project, projects, t }) {
       </div>
 
       <div className="px-3 md:px-8 lg:px-12 max-w-[1500px] mx-auto">
-        <div className="signal-frame relative bg-black overflow-hidden md:rounded-[1.5rem] aspect-video md:aspect-[16/7.8] md:max-h-[760px]">
+        <div
+          className={`signal-frame relative bg-black overflow-hidden rounded-[1.15rem] md:rounded-[1.5rem] ${mainFrameClass}`}
+        >
           {project.video ? (
             <ProjectVideoPlayer
               url={project.video}
@@ -821,6 +860,10 @@ function ProjectDetail({ project, projects, t }) {
               }}
             />
           )}
+
+          <div className="absolute top-4 right-4 md:top-5 md:right-5 z-20 pointer-events-none rounded-full border border-white/15 bg-black/35 backdrop-blur-md px-3 py-2 text-[8px] md:text-[9px] uppercase tracking-[0.16em] text-white/55">
+            {mainOrientationLabel}
+          </div>
         </div>
       </div>
 
@@ -1580,6 +1623,10 @@ export default function Portfolio() {
           .project-media {
             contain: layout paint;
             backface-visibility: hidden;
+          }
+
+          .project-media.aspect-\[9\/16\] {
+            max-height: 72svh;
           }
 
           .project-media mux-player,
