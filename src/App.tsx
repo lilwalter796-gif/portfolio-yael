@@ -1345,6 +1345,20 @@ export default function Portfolio() {
 
   useEffect(() => {
     document.documentElement.lang = language;
+    document.documentElement.setAttribute('translate', 'no');
+    document.documentElement.classList.add('notranslate');
+
+    let noTranslateMeta = document.querySelector(
+      'meta[name="google"][content="notranslate"]',
+    );
+
+    if (!noTranslateMeta) {
+      noTranslateMeta = document.createElement('meta');
+      noTranslateMeta.setAttribute('name', 'google');
+      noTranslateMeta.setAttribute('content', 'notranslate');
+      document.head.appendChild(noTranslateMeta);
+    }
+
     try {
       localStorage.setItem('yn-language', language);
     } catch {}
@@ -1737,6 +1751,18 @@ export default function Portfolio() {
         </React.Fragment>
       ));
 
+  function handleLanguageChange(nextLanguage) {
+    if (!['it', 'fr'].includes(nextLanguage)) return;
+    setLanguage(nextLanguage);
+    setMobileMenuOpen(false);
+
+    // Browser translation engines can leave stale DOM mutations behind.
+    // Returning to the top-level native UI avoids keeping an old translated overlay.
+    requestAnimationFrame(() => {
+      document.documentElement.lang = nextLanguage;
+    });
+  }
+
   function scrollToSection(id) {
     setMobileMenuOpen(false);
 
@@ -1769,8 +1795,10 @@ export default function Portfolio() {
 
   return (
     <div
-      className="min-h-screen bg-[#050505] text-white font-sans antialiased overflow-x-hidden selection:bg-[var(--accent)] selection:text-white"
+      className="notranslate min-h-screen bg-[#050505] text-white font-sans antialiased overflow-x-hidden selection:bg-[var(--accent)] selection:text-white"
       style={{ '--accent': ACCENT }}
+      translate="no"
+      data-native-language-switch="it-fr"
     >
       <style>{`
         html {
@@ -2088,7 +2116,7 @@ export default function Portfolio() {
 
             <div className="flex items-center gap-2">
               <div className="hidden sm:block">
-                <LanguageSwitch language={language} onChange={setLanguage} compact />
+                <LanguageSwitch language={language} onChange={handleLanguageChange} compact />
               </div>
               <button
                 onClick={handlePrimaryCta}
@@ -2101,7 +2129,7 @@ export default function Portfolio() {
               <div className="md:hidden">
                 <LanguageSwitch
                   language={language}
-                  onChange={setLanguage}
+                  onChange={handleLanguageChange}
                   compact
                 />
               </div>
@@ -2133,7 +2161,7 @@ export default function Portfolio() {
             </div>
 
             <div className="space-y-6">
-              <LanguageSwitch language={language} onChange={setLanguage} compact />
+              <LanguageSwitch language={language} onChange={handleLanguageChange} compact />
               <div className="flex gap-5 text-white/50">
               <a href={siteSettings.instagram_url} target="_blank" rel="noreferrer"><FaInstagram /></a>
               <a href={siteSettings.tiktok_url} target="_blank" rel="noreferrer"><FaTiktok /></a>
