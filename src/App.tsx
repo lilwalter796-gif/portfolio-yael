@@ -40,23 +40,23 @@ const FALLBACK_PROJECT_IMAGE =
 
 const DEFAULT_SETTINGS = {
   showreel_url: '',
-  hero_title: 'VISUAL STORIES\nTHAT FEEL ALIVE.',
-  hero_roles: 'VIDEOMAKER · FILMMAKER · CONTENT CREATOR',
+  hero_title: 'DES HISTOIRES VISUELLES\nQUI PRENNENT VIE.',
+  hero_roles: 'VIDÉASTE · RÉALISATEUR · CRÉATEUR DE CONTENU',
   hero_location_line: 'BASÉ À PARME · DISPONIBLE EN ITALIE ET À L’INTERNATIONAL',
-  hero_primary_cta: "LET'S WORK TOGETHER",
-  hero_secondary_cta: 'SELECTED WORK',
+  hero_primary_cta: 'TRAVAILLONS ENSEMBLE',
+  hero_secondary_cta: 'PROJETS SÉLECTIONNÉS',
   about_heading:
-    "I'm Yaël — a videomaker focused on movement, emotion and stories built for the screen.",
+    'Je suis Yaël Noukimi, vidéaste et directeur créatif derrière LORIK.NK.',
   about_body: [
-    'I create audiovisual content for events, brands, artists and social platforms — from concept and shooting to editing, color and final delivery.',
-    'My approach is cinematic but practical: every frame has to serve the atmosphere, the message and the platform where the work will live.',
-    'Alongside my personal work, I co-founded Visora, an audiovisual studio focused on video production, photography and visual communication.',
-    'I am currently studying Management Engineering in Italy, connecting creativity, technology and business in the way I build projects.',
+    'Je crée des contenus audiovisuels pour les événements, les marques, les artistes et les plateformes sociales : de l’idée et du tournage jusqu’au montage, à la couleur et à la livraison finale.',
+    'Mon approche est cinématographique mais concrète : chaque plan doit servir l’atmosphère, le message et la plateforme sur laquelle le contenu sera diffusé.',
+    'LORIK.NK est mon univers personnel : réalisation, storytelling visuel et direction créative.',
+    'J’étudie actuellement l’Ingegneria Gestionale en Italie, avec une approche qui relie créativité, technologie et business.',
   ].join('\n\n'),
   about_image_url: '',
-  contact_heading: "LET'S MAKE\nSOMETHING\nPEOPLE REMEMBER.",
+  contact_heading: 'CRÉONS\nQUELQUE CHOSE\nDE MÉMORABLE.',
   contact_description:
-    'Available for freelance projects, event coverage, branded content and creative collaborations.',
+    'Disponible pour des productions freelance, événements, contenus de marque et collaborations créatives.',
   contact_email: PORTFOLIO_DATA.email,
   whatsapp_number: '',
   instagram_url: PORTFOLIO_DATA.socials.instagram,
@@ -340,6 +340,44 @@ function writeCachedProjects(projects) {
   }
 }
 
+function cleanRoleLabel(value = '') {
+  return String(value)
+    .trim()
+    .replace(/^[\s·•|/—–-]+/, '')
+    .replace(/[\s·•|/—–-]+$/, '')
+    .replace(/\s*[·•|]\s*/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+function cleanRoleList(values) {
+  return Array.isArray(values)
+    ? values.map(cleanRoleLabel).filter(Boolean)
+    : [];
+}
+
+function isRealLinkedInProfile(url = '') {
+  if (!url) return false;
+
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace(/^www\./, '').toLowerCase();
+    const path = parsed.pathname.replace(/\/+$/, '');
+
+    if (!host.endsWith('linkedin.com')) return false;
+
+    // Ignore LinkedIn home/login/share URLs. Show the icon only for a real
+    // profile/company-style destination configured by the user.
+    return (
+      /^\/in\/[^/]+/i.test(path) ||
+      /^\/company\/[^/]+/i.test(path) ||
+      /^\/school\/[^/]+/i.test(path)
+    );
+  } catch {
+    return false;
+  }
+}
+
 function normalizeProject(project) {
   const databaseVideos = Array.isArray(project.project_videos)
     ? [...project.project_videos].sort(
@@ -386,8 +424,8 @@ function normalizeProject(project) {
     videos,
     description: project.description ?? '',
     description_it: project.description_it ?? '',
-    roles: Array.isArray(project.roles) ? project.roles : [],
-    roles_it: Array.isArray(project.roles_it) ? project.roles_it : [],
+    roles: cleanRoleList(project.roles),
+    roles_it: cleanRoleList(project.roles_it),
     gallery: Array.isArray(project.gallery) ? project.gallery : [],
   };
 }
@@ -2099,7 +2137,11 @@ export default function Portfolio() {
               <div className="flex gap-5 text-white/50">
               <a href={siteSettings.instagram_url} target="_blank" rel="noreferrer"><FaInstagram /></a>
               <a href={siteSettings.tiktok_url} target="_blank" rel="noreferrer"><FaTiktok /></a>
-              <a href={siteSettings.linkedin_url} target="_blank" rel="noreferrer"><FaLinkedinIn /></a>
+              {isRealLinkedInProfile(siteSettings.linkedin_url) && (
+                <a href={siteSettings.linkedin_url} target="_blank" rel="noreferrer" aria-label="LinkedIn">
+                  <FaLinkedinIn />
+                </a>
+              )}
               {whatsappHref && <a href={whatsappHref} target="_blank" rel="noreferrer"><FaWhatsapp /></a>}
               </div>
             </div>
@@ -2143,8 +2185,13 @@ export default function Portfolio() {
                 </video>
               )}
 
-              <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/15 to-black/90" />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/20 to-black/95" />
               <div className="absolute inset-0 bg-gradient-to-r from-black/45 via-transparent to-black/10" />
+
+              {/* The showreel can contain burned-in subtitles. This lower scrim
+                  keeps them visually behind the hero copy instead of competing
+                  with the headline. */}
+              <div className="absolute inset-x-0 bottom-0 h-[48%] md:h-[44%] bg-gradient-to-b from-transparent via-black/55 to-black pointer-events-none" />
 
               <div className="absolute inset-x-5 md:inset-x-10 lg:inset-x-14 top-24 md:top-28 bottom-6 md:bottom-8 pointer-events-none opacity-80">
                 <span className="hud-corner tl" />
@@ -2157,7 +2204,7 @@ export default function Portfolio() {
               </div>
             </div>
 
-            <div className="relative z-10 w-full max-w-[1600px] mx-auto px-5 md:px-10 lg:px-14 pb-8 md:pb-10 pt-36">
+            <div className="relative z-10 w-full max-w-[1600px] mx-auto px-5 md:px-10 lg:px-14 pb-10 md:pb-10 pt-28 sm:pt-32 md:pt-36">
               <div className="flex flex-wrap items-center justify-between gap-4 mb-6 md:mb-8 hero-in hero-delay-1">
                 <div className="flex items-center gap-3 text-[9px] md:text-[10px] uppercase tracking-[0.18em] text-white/65">
                   <span className="w-2 h-2 rounded-full bg-[var(--accent)] pulse-dot" />
@@ -2472,7 +2519,11 @@ export default function Portfolio() {
                   <div className="flex md:justify-end items-end gap-4 text-base">
                     <a href={siteSettings.instagram_url} target="_blank" rel="noreferrer" aria-label="Instagram"><FaInstagram /></a>
                     <a href={siteSettings.tiktok_url} target="_blank" rel="noreferrer" aria-label="TikTok"><FaTiktok /></a>
-                    <a href={siteSettings.linkedin_url} target="_blank" rel="noreferrer" aria-label="LinkedIn"><FaLinkedinIn /></a>
+                    {isRealLinkedInProfile(siteSettings.linkedin_url) && (
+                      <a href={siteSettings.linkedin_url} target="_blank" rel="noreferrer" aria-label="LinkedIn">
+                        <FaLinkedinIn />
+                      </a>
+                    )}
                     {whatsappHref && <a href={whatsappHref} target="_blank" rel="noreferrer" aria-label="WhatsApp"><FaWhatsapp /></a>}
                   </div>
                 </div>
