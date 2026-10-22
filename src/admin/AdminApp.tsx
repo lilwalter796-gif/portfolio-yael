@@ -30,6 +30,7 @@ const EMPTY_PROJECT = {
   category: '',
   category_it: '',
   project_type: 'film',
+  project_types: ['film'],
   website_url: '',
   technologies: [],
   year: new Date().getFullYear(),
@@ -48,6 +49,36 @@ const EMPTY_PROJECT = {
 
 const MEDIA_BUCKET = 'portfolio-media'
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024
+
+const PROJECT_TYPE_OPTIONS = [
+  {
+    value: 'film',
+    label: 'Film / Vidéo',
+    description: 'Films, aftermovies, teasers, reels et couvertures vidéo.',
+  },
+  {
+    value: 'photography',
+    label: 'Photographie',
+    description: 'Reportages photo, portraits et couverture événementielle.',
+  },
+  {
+    value: 'campaign',
+    label: 'Campaign',
+    description: 'Projet global combinant vidéo, visuels et/ou digital.',
+  },
+  {
+    value: 'website',
+    label: 'Website / Expérience digitale',
+    description: 'Site web, landing page ou expérience digitale.',
+  },
+  {
+    value: 'visual_design',
+    label: 'Visual Design / Flyers / Affiches',
+    description: 'Flyers, affiches, visuels réseaux sociaux et direction graphique.',
+  },
+]
+
+const ALLOWED_PROJECT_TYPES = PROJECT_TYPE_OPTIONS.map((option) => option.value)
 
 function sanitizeFileName(name = '') {
   return name
@@ -1654,12 +1685,33 @@ function ProjectEditor({
   onClose,
   onSaved,
 }) {
-  const [form, setForm] = useState(() => ({
-    ...EMPTY_PROJECT,
-    ...(project ?? {}),
-    roles: project?.roles ?? [],
-    gallery: project?.gallery ?? [],
-  }))
+  const [form, setForm] = useState(() => {
+    const primaryType = ALLOWED_PROJECT_TYPES.includes(project?.project_type)
+      ? project.project_type
+      : 'film'
+
+    const savedTypes =
+      Array.isArray(project?.project_types) && project.project_types.length > 0
+        ? project.project_types.filter((type) => ALLOWED_PROJECT_TYPES.includes(type))
+        : [primaryType]
+
+    const normalizedTypes = Array.from(
+      new Set(savedTypes.length > 0 ? savedTypes : [primaryType]),
+    )
+
+    if (!normalizedTypes.includes(primaryType)) {
+      normalizedTypes.unshift(primaryType)
+    }
+
+    return {
+      ...EMPTY_PROJECT,
+      ...(project ?? {}),
+      project_type: primaryType,
+      project_types: normalizedTypes,
+      roles: project?.roles ?? [],
+      gallery: project?.gallery ?? [],
+    }
+  })
 
   const [rolesText, setRolesText] = useState(
     (project?.roles ?? []).join('\n'),
@@ -1887,6 +1939,38 @@ function ProjectEditor({
     }))
   }
 
+  function toggleProjectType(type) {
+    if (!ALLOWED_PROJECT_TYPES.includes(type)) return
+
+    setForm((current) => {
+      const currentTypes =
+        Array.isArray(current.project_types) && current.project_types.length > 0
+          ? current.project_types
+          : [current.project_type || 'film']
+
+      const isSelected = currentTypes.includes(type)
+
+      // Un projet doit toujours garder au moins un type.
+      if (isSelected && currentTypes.length === 1) {
+        return current
+      }
+
+      const nextTypes = isSelected
+        ? currentTypes.filter((item) => item !== type)
+        : [...currentTypes, type]
+
+      const nextPrimary = nextTypes.includes(current.project_type)
+        ? current.project_type
+        : nextTypes[0] || 'film'
+
+      return {
+        ...current,
+        project_types: nextTypes,
+        project_type: nextPrimary,
+      }
+    })
+  }
+
   function handleTitleChange(value) {
     setForm((current) => ({
       ...current,
@@ -2100,14 +2184,31 @@ function ProjectEditor({
       cleanedVideos[0] ||
       null
 
+    const selectedProjectTypes = Array.from(
+      new Set(
+        (
+          Array.isArray(form.project_types) && form.project_types.length > 0
+            ? form.project_types
+            : [form.project_type || 'film']
+        ).filter((type) => ALLOWED_PROJECT_TYPES.includes(type)),
+      ),
+    )
+
+    if (selectedProjectTypes.length === 0) {
+      selectedProjectTypes.push('film')
+    }
+
+    const primaryProjectType = selectedProjectTypes.includes(form.project_type)
+      ? form.project_type
+      : selectedProjectTypes[0]
+
     const payload = {
       title: cleanText(form.title),
       slug: cleanText(form.slug) || slugify(form.title),
       category: cleanText(form.category) || null,
       category_it: cleanText(form.category_it) || null,
-      project_type: ['film', 'campaign', 'website', 'visual_design', 'photography'].includes(form.project_type)
-        ? form.project_type
-        : 'film',
+      project_type: primaryProjectType,
+      project_types: selectedProjectTypes,
       website_url: cleanText(form.website_url) || null,
       technologies: technologiesText
         .split('\n')
@@ -2251,18 +2352,74 @@ function ProjectEditor({
                 />
               </Field>
 
-              <Field label="Type de projet" hint="Détermine où et comment le projet apparaît sur le portfolio">
-                <select
-                  value={form.project_type ?? 'film'}
-                  onChange={(e) => update('project_type', e.target.value)}
-                  className="admin-input"
-                >
-                  <option value="film">Film / Vidéo</option>
-                  <option value="campaign">Campaign · Vidéo + visuels + digital</option>
-                  <option value="website">Website / Expérience digitale</option>
-                  <option value="visual_design">Visual Design / Flyers / Affiches</option>
-                  <option value="photography">Photographie</option>
-                </select>
+              <Field
+                label="Types de projet"
+                hint="Tu peux en sélectionner plusieurs. Le projet apparaîtra dans toutes les sections correspondantes."
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {PROJECT_TYPE_OPTIONS.map((option) => {
+                    const selected = (
+                      Array.isArray(form.project_types) && form.project_types.length > 0
+                        ? form.project_types
+                        : [form.project_type || 'film']
+                    ).includes(option.value)
+
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => toggleProjectType(option.value)}
+                        className={`text-left border px-4 py-3 transition ${
+                          selected
+                            ? 'border-[#e10600] bg-[#e10600]/10 text-white'
+                            : 'border-white/10 bg-white/[0.02] text-white/60 hover:border-white/25'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-sm font-medium">{option.label}</span>
+                          <span
+                            className={`w-5 h-5 shrink-0 border flex items-center justify-center ${
+                              selected
+                                ? 'border-[#e10600] bg-[#e10600] text-white'
+                                : 'border-white/20'
+                            }`}
+                          >
+                            {selected ? '✓' : ''}
+                          </span>
+                        </div>
+                        <p className="mt-1.5 text-[11px] leading-relaxed text-white/35">
+                          {option.description}
+                        </p>
+                      </button>
+                    )
+                  })}
+                </div>
+
+                <div className="mt-4">
+                  <label className="block text-[10px] uppercase tracking-[0.16em] text-white/35 mb-2">
+                    Type principal
+                  </label>
+                  <select
+                    value={form.project_type ?? 'film'}
+                    onChange={(e) => update('project_type', e.target.value)}
+                    className="admin-input"
+                  >
+                    {PROJECT_TYPE_OPTIONS.filter((option) =>
+                      (
+                        Array.isArray(form.project_types) && form.project_types.length > 0
+                          ? form.project_types
+                          : [form.project_type || 'film']
+                      ).includes(option.value),
+                    ).map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-2 text-[11px] text-white/30">
+                    Le type principal décide surtout de la présentation visuelle de la fiche. Les autres types servent au classement du projet.
+                  </p>
+                </div>
               </Field>
 
               <Field label="URL du site" hint="Optionnel · surtout pour Website ou Campaign">
@@ -2714,7 +2871,8 @@ function ProjectEditor({
             <div className="border border-white/10 bg-zinc-950/60 p-5 text-xs leading-relaxed text-gray-500">
               <p className="text-white/75 font-medium mb-2">Comment utiliser les types</p>
               <p><span className="text-gray-300">Film :</span> projet vidéo classique.</p>
-              <p><span className="text-gray-300">Campaign :</span> vidéo + flyers/photos + éventuellement un site.</p>
+              <p><span className="text-gray-300">Multi-type :</span> coche Film + Photographie si tu as réalisé les deux sur le même projet.</p>
+              <p><span className="text-gray-300">Campaign :</span> réserve-le aux projets globaux combinant plusieurs supports autour d’une même communication.</p>
               <p><span className="text-gray-300">Website :</span> mets une capture desktop en couverture, puis les captures mobile dans la galerie.</p>
               <p><span className="text-gray-300">Visual Design :</span> mets ton meilleur flyer en couverture et les autres créations dans la galerie.</p>
             </div>

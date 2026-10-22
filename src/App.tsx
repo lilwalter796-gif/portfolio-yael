@@ -413,6 +413,10 @@ function normalizeProject(project) {
     category: project.category ?? '',
     category_it: project.category_it ?? '',
     project_type: project.project_type || 'film',
+    project_types:
+      Array.isArray(project.project_types) && project.project_types.length > 0
+        ? project.project_types
+        : [project.project_type || 'film'],
     website_url: project.website_url ?? '',
     technologies: Array.isArray(project.technologies) ? project.technologies : [],
     year: project.year ? String(project.year) : '',
@@ -848,8 +852,17 @@ function ProjectCard({ project, index, t }) {
 }
 
 
-function projectTypeLabel(project, t) {
-  switch (project.project_type) {
+function projectHasType(project, type) {
+  const types =
+    Array.isArray(project.project_types) && project.project_types.length > 0
+      ? project.project_types
+      : [project.project_type || 'film'];
+
+  return types.includes(type);
+}
+
+function projectTypeLabelByType(type, project, t) {
+  switch (type) {
     case 'website':
       return t.website;
     case 'visual_design':
@@ -858,14 +871,36 @@ function projectTypeLabel(project, t) {
       return t.campaign;
     case 'photography':
       return t.photography;
+    case 'film':
+      return t.film || project.category || t.project;
     default:
       return project.category || t.project;
   }
 }
 
+function projectTypeLabels(project, t) {
+  const types =
+    Array.isArray(project.project_types) && project.project_types.length > 0
+      ? project.project_types
+      : [project.project_type || 'film'];
+
+  return types.map((type) => projectTypeLabelByType(type, project, t));
+}
+
+function projectTypeLabel(project, t) {
+  return projectTypeLabelByType(project.project_type || 'film', project, t);
+}
+
 function CreativeCard({ project, index, t }) {
-  const type = project.project_type || 'film';
-  const typeLabel = projectTypeLabel(project, t);
+  const creativeType =
+    (projectHasType(project, 'website') && project.website_url && 'website') ||
+    (projectHasType(project, 'visual_design') && 'visual_design') ||
+    (projectHasType(project, 'photography') && 'photography') ||
+    (projectHasType(project, 'campaign') && 'campaign') ||
+    project.project_type ||
+    'film';
+  const type = creativeType;
+  const typeLabel = projectTypeLabelByType(type, project, t);
   const gallery = Array.isArray(project.gallery) ? project.gallery : [];
   const technologies = Array.isArray(project.technologies)
     ? project.technologies.slice(0, 4)
@@ -1068,6 +1103,7 @@ function ProjectDetail({ project, projects, t }) {
         : '16:9';
 
   const projectType = project.project_type || 'film';
+  const allTypeLabels = projectTypeLabels(project, t);
   const isWebsite = projectType === 'website';
   const isVisualDesign = projectType === 'visual_design';
   const isCampaign = projectType === 'campaign';
@@ -1098,9 +1134,16 @@ function ProjectDetail({ project, projects, t }) {
           </div>
 
           <div className="lg:col-span-3 lg:pb-2 text-sm text-white/50 leading-relaxed">
-            <p className="text-[9px] uppercase tracking-[0.18em] text-[var(--accent)] mb-3">
-              {typeLabel}
-            </p>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {allTypeLabels.map((label) => (
+                <span
+                  key={label}
+                  className="rounded-full border border-[var(--accent)]/35 px-2.5 py-1 text-[8px] uppercase tracking-[0.16em] text-[var(--accent)]"
+                >
+                  {label}
+                </span>
+              ))}
+            </div>
             {project.roles.length > 0 && project.roles.slice(0, 5).map((role) => (
               <p key={role}>{role}</p>
             ))}
@@ -1705,8 +1748,10 @@ export default function Portfolio() {
   const filmProjects = useMemo(
     () =>
       displayProjects.filter((project) => {
-        const type = project.project_type || 'film';
-        return ['film', 'campaign'].includes(type) && Boolean(project.video || project.videos?.length);
+        const belongsToFilm =
+          projectHasType(project, 'film') || projectHasType(project, 'campaign');
+
+        return belongsToFilm && Boolean(project.video || project.videos?.length);
       }),
     [displayProjects],
   );
@@ -1714,11 +1759,18 @@ export default function Portfolio() {
   const creativeProjects = useMemo(
     () =>
       displayProjects.filter((project) => {
-        const type = project.project_type || 'film';
-        if (['website', 'visual_design', 'photography'].includes(type)) return true;
-        if (type === 'campaign') {
+        if (
+          projectHasType(project, 'website') ||
+          projectHasType(project, 'visual_design') ||
+          projectHasType(project, 'photography')
+        ) {
+          return true;
+        }
+
+        if (projectHasType(project, 'campaign')) {
           return Boolean(project.website_url || project.gallery?.length);
         }
+
         return false;
       }),
     [displayProjects],
